@@ -326,9 +326,7 @@ We welcome contributions! Please see our [Contributing Guide](docs/docs/developm
 - **Email Support**: Enterprise support available
 
 ### **Community**
-- **GitHub**: [github.com/codeexplain/codeexplain](https://github.com/codeexplain/codeexplain)
-- **Discord**: [discord.gg/codeexplain](https://discord.gg/codeexplain)
-- **Twitter**: [@codeexplain](https://twitter.com/codeexplain)
+- **GitHub**: [github.com/nanaagyei/code-explain](https://github.com/nanaagyei/code-explain)
 
 ## 📄 License
 
