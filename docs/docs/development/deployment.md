@@ -518,4 +518,4 @@ After successful deployment:
 
 **🎉 Congratulations!** You've successfully deployed CodeExplain. Your AI-powered code documentation platform is now ready to revolutionize how you document and analyze code!
 
-For additional help, check our [Documentation](docs/docs/getting-started/introduction.md) or [GitHub Issues](https://github.com/codeexplain/codeexplain/issues).
+For additional help, check our [Documentation](docs/docs/getting-started/introduction.md) or [GitHub Issues](https://github.com/nanaagyei/code-explain/issues).
