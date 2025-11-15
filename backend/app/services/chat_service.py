@@ -41,7 +41,7 @@ class ChatService:
             Chunks of response text for streaming
         """
         # Build system prompt
-        system_prompt = """You are CodeExplain AI, an expert code documentation assistant.
+        system_prompt = """You are CodeXplain AI, an expert code documentation assistant.
 
 Your role is to:
 - Answer questions about code structure, patterns, and best practices

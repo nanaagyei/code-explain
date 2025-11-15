@@ -31,25 +31,25 @@ function DocumentTitleManager() {
     const getPageTitle = (pathname: string) => {
       switch (pathname) {
         case '/':
-          return 'Dashboard - CodeExplain';
+          return 'Dashboard - CodeXplain';
         case '/login':
-          return 'Sign In - CodeExplain';
+          return 'Sign In - CodeXplain';
         case '/register':
-          return 'Sign Up - CodeExplain';
+          return 'Sign Up - CodeXplain';
         case '/settings':
-          return 'Settings - CodeExplain';
+          return 'Settings - CodeXplain';
         case '/batch-jobs':
-          return 'Batch Jobs - CodeExplain';
+          return 'Batch Jobs - CodeXplain';
         case '/mentor':
-          return 'AI Mentor - CodeExplain';
+          return 'AI Mentor - CodeXplain';
         default:
           if (pathname.startsWith('/repositories/')) {
             if (pathname.includes('/files/')) {
-              return 'File Documentation - CodeExplain';
+              return 'File Documentation - CodeXplain';
             }
-            return 'Repository Details - CodeExplain';
+            return 'Repository Details - CodeXplain';
           }
-          return 'CodeExplain - AI-Powered Code Documentation';
+          return 'CodeXplain - AI-Powered Code Documentation';
       }
     };
     
@@ -61,9 +61,9 @@ function DocumentTitleManager() {
     if (metaDescription) {
       const descriptions: Record<string, string> = {
         '/': 'Manage your code repositories and generate AI-powered documentation. Upload files or connect GitHub repositories for automated code analysis.',
-        '/login': 'Sign in to CodeExplain and start generating comprehensive documentation for your code projects.',
-        '/register': 'Join CodeExplain to transform your code into comprehensive documentation with AI-powered insights.',
-        '/settings': 'Configure your CodeExplain account settings, API keys, and documentation preferences.',
+        '/login': 'Sign in to CodeXplain and start generating comprehensive documentation for your code projects.',
+        '/register': 'Join CodeXplain to transform your code into comprehensive documentation with AI-powered insights.',
+        '/settings': 'Configure your CodeXplain account settings, API keys, and documentation preferences.',
         '/batch-jobs': 'Monitor and manage your batch documentation jobs. Track progress and view results.',
         '/mentor': 'Get personalized coding insights and learning recommendations from our AI mentor.',
       };

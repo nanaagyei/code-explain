@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import type { BatchJobItemCreate } from '../types/index';
+import { Rocket, XCircle } from 'lucide-react';
 
 interface BulkUploadModalProps {
   isOpen: boolean;
@@ -70,7 +71,10 @@ export default function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProp
       <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform transition-all border border-gray-200">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">🚀 Bulk Upload</h3>
+            <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+              <Rocket className="w-6 h-6" />
+              <span>Bulk Upload</span>
+            </h3>
             <p className="text-sm text-gray-600 mt-1">Process multiple GitHub repositories at once</p>
           </div>
           <button
@@ -173,9 +177,10 @@ export default function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProp
           {/* Error Message */}
           {createBatchMutation.isError && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-700 text-sm text-center font-medium">
-                ❌ {(createBatchMutation.error as Error)?.message || 'Failed to create batch job'}
-              </p>
+              <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
+                <XCircle className="w-5 h-5" />
+                <span>{(createBatchMutation.error as Error)?.message || 'Failed to create batch job'}</span>
+              </div>
             </div>
           )}
         </form>

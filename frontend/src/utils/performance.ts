@@ -1,5 +1,5 @@
 /**
- * Performance optimization utilities for CodeExplain frontend
+ * Performance optimization utilities for CodeXplain frontend
  * 
  * Features:
  * - Request debouncing

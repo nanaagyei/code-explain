@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://codeexplain.ai/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin or private areas (if any)
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow all public pages
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /contact

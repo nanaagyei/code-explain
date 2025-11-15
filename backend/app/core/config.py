@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # App
-    app_name: str = "CodeExplain"
+    app_name: str = "CodeXplain"
     env: str = "development"
     debug: bool = True
     secret_key: str

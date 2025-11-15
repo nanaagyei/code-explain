@@ -3,6 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import type { BatchJobSummary } from '../types/index';
+import { 
+  Package, 
+  Settings, 
+  CheckCircle2, 
+  XCircle, 
+  Ban, 
+  HelpCircle, 
+  Folder,
+  Clock,
+  ClipboardList,
+  UserCircle
+} from 'lucide-react';
 
 export default function BatchJobs() {
   const { user, logout } = useAuthStore();
@@ -51,12 +63,12 @@ export default function BatchJobs() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'processing': return '⚙️';
-      case 'completed': return '✅';
-      case 'failed': return '❌';
-      case 'cancelled': return '🚫';
-      default: return '❓';
+      case 'pending': return <Clock className="w-4 h-4 inline" />;
+      case 'processing': return <Settings className="w-4 h-4 inline animate-spin" />;
+      case 'completed': return <CheckCircle2 className="w-4 h-4 inline" />;
+      case 'failed': return <XCircle className="w-4 h-4 inline" />;
+      case 'cancelled': return <Ban className="w-4 h-4 inline" />;
+      default: return <HelpCircle className="w-4 h-4 inline" />;
     }
   };
 
@@ -84,17 +96,34 @@ export default function BatchJobs() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.username}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={logout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition duration-200"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition duration-200 flex-shrink-0"
               >
                 Sign Out
               </button>
+              
+              {/* Profile Section */}
+              <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
+                  <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                </div>
+                <div className="hidden md:block text-left min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-[150px]">
+                    {user?.username || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[150px]">
+                    {user?.email || ''}
+                  </p>
+                </div>
+                {/* Mobile: Show only icon and username */}
+                <div className="md:hidden text-left min-w-0">
+                  <p className="text-xs font-semibold text-gray-900 truncate max-w-[80px]">
+                    {user?.username || 'User'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -112,7 +141,7 @@ export default function BatchJobs() {
                   <p className="text-3xl font-bold text-blue-900">{stats.total_jobs}</p>
                 </div>
                 <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">📦</span>
+                  <Package className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </div>
@@ -124,7 +153,7 @@ export default function BatchJobs() {
                   <p className="text-3xl font-bold text-green-900">{stats.processing_jobs}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">⚙️</span>
+                  <Settings className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </div>
@@ -136,7 +165,7 @@ export default function BatchJobs() {
                   <p className="text-3xl font-bold text-purple-900">{stats.completed_jobs}</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">✅</span>
+                  <CheckCircle2 className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
             </div>
@@ -148,7 +177,7 @@ export default function BatchJobs() {
                   <p className="text-3xl font-bold text-orange-900">{stats.total_repositories}</p>
                 </div>
                 <div className="w-12 h-12 bg-orange-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">📁</span>
+                  <Folder className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </div>
@@ -157,7 +186,10 @@ export default function BatchJobs() {
 
         {/* Batch Jobs List */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">📋 Batch Jobs</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+            <ClipboardList className="w-6 h-6" />
+            <span>Batch Jobs</span>
+          </h2>
 
           {isLoading ? (
             <div className="space-y-4">
@@ -180,8 +212,9 @@ export default function BatchJobs() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
                         <h3 className="text-lg font-semibold text-gray-900">{job.name}</h3>
-                        <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusColor(job.status)}`}>
-                          {getStatusIcon(job.status)} {job.status.toUpperCase()}
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full border flex items-center space-x-1 ${getStatusColor(job.status)}`}>
+                          {getStatusIcon(job.status)}
+                          <span>{job.status.toUpperCase()}</span>
                         </span>
                       </div>
                       
@@ -201,12 +234,12 @@ export default function BatchJobs() {
 
                       {/* Stats */}
                       <div className="flex items-center space-x-6 text-sm text-gray-600">
-                        <span>📦 {job.total_items} items</span>
-                        <span>✅ {job.completed_items} completed</span>
+                        <span className="flex items-center space-x-1"><Package className="w-4 h-4" /><span>{job.total_items} items</span></span>
+                        <span className="flex items-center space-x-1"><CheckCircle2 className="w-4 h-4" /><span>{job.completed_items} completed</span></span>
                         {job.failed_items > 0 && (
-                          <span className="text-red-600">❌ {job.failed_items} failed</span>
+                          <span className="text-red-600 flex items-center space-x-1"><XCircle className="w-4 h-4" /><span>{job.failed_items} failed</span></span>
                         )}
-                        <span>🕐 {new Date(job.created_at).toLocaleDateString()}</span>
+                        <span className="flex items-center space-x-1"><Clock className="w-4 h-4" /><span>{new Date(job.created_at).toLocaleDateString()}</span></span>
                       </div>
                     </div>
 
@@ -249,7 +282,9 @@ export default function BatchJobs() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">📦</div>
+              <div className="mb-4 flex justify-center">
+                <Package className="w-16 h-16 text-gray-400" />
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">No batch jobs yet</h3>
               <p className="text-gray-600 mb-6">
                 Create a batch job to process multiple repositories at once.

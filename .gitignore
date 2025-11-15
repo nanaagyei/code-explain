@@ -9,9 +9,13 @@ env/
 ENV/
 .venv
 *.egg-info/
+*.egg
+
+# Python build artifacts
+backend/dist/
+backend/build/
 dist/
 build/
-*.egg
 
 # Environment variables and secrets
 .env
@@ -75,8 +79,15 @@ node_modules/
 .yarn-integrity
 .pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
 
 # React/Vite/Next.js
+# Build outputs
+frontend/dist/
+backend/dist/
 dist/
 .cache/
 .parcel-cache/
@@ -84,6 +95,8 @@ dist/
 out/
 build/
 .turbo/
+# But keep frontend/public (contains favicons, robots.txt, etc.)
+!frontend/public/
 
 # Docker
 docker-compose.override.yml
@@ -110,7 +123,7 @@ alembic/versions/*.pyc
 *.orig
 
 # Package managers
-package-lock.json
+# Note: package-lock.json should be committed for consistency
 yarn.lock
 pnpm-lock.yaml
 
@@ -131,15 +144,7 @@ docs/.docusaurus/
 .vscode/launch.json
 .vscode/extensions.json
 
-# OS specific
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
+# OS specific (duplicate removed - already covered above)
 
 # Runtime data
 pids
@@ -157,9 +162,7 @@ coverage/
 # Dependency directories
 jspm_packages/
 
-# Optional npm cache directory
-.npm
-
+# Optional npm cache directory (already covered above)
 # Optional eslint cache
 .eslintcache
 
@@ -174,9 +177,6 @@ jspm_packages/
 
 # Output of 'npm pack'
 *.tgz
-
-# Yarn Integrity file
-.yarn-integrity
 
 # dotenv environment variables file
 .env.test
@@ -194,7 +194,9 @@ dist
 
 # Gatsby files
 .cache/
-public
+# Note: frontend/public should NOT be ignored - it contains important assets
+# Only ignore Gatsby's public folder
+docs/public/
 
 # Storybook build outputs
 .out
@@ -203,3 +205,26 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Railway deployment
+.railway/
+
+# Local development files
+*.local
+*.local.*
+
+# Backup files
+*.swp
+*.swo
+*~
+
+# IDE - keep .vscode but ignore user-specific settings
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/*.code-workspace
+
+# Keep important config files
+!frontend/public/
+!env.template
+!frontend/env.example

@@ -1,5 +1,5 @@
 /**
- * Test setup configuration for CodeExplain frontend tests
+ * Test setup configuration for CodeXplain frontend tests
  */
 
 import '@testing-library/jest-dom';

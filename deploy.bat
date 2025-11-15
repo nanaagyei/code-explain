@@ -1,8 +1,8 @@
 @echo off
-REM 🚀 CodeExplain Quick Deployment Script for Windows
-REM This script automates the deployment process for CodeExplain
+REM 🚀 CodeXplain Quick Deployment Script for Windows
+REM This script automates the deployment process for CodeXplain
 
-echo 🚀 Starting CodeExplain Deployment...
+echo 🚀 Starting CodeXplain Deployment...
 echo ======================================
 
 REM Check prerequisites

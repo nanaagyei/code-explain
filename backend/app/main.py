@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     - Shutdown: Close connections gracefully
     """
     # Startup
-    print("🚀 Starting CodeExplain API...")
+    print("🚀 Starting CodeXplain API...")
     print(f"   Environment: {settings.env}")
     print(f"   Debug mode: {settings.debug}")
     
@@ -32,12 +32,12 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     print("✓ Database tables created/verified")
     
-    print("✓ CodeExplain API is ready!\n")
+    print("✓ CodeXplain API is ready!\n")
     
     yield
     
     # Shutdown
-    print("\n🛑 Shutting down CodeExplain API...")
+    print("\n🛑 Shutting down CodeXplain API...")
     await cache.disconnect()
     await engine.dispose()
     print("✓ Cleanup complete")
@@ -77,7 +77,7 @@ app.include_router(code_analysis.router)
 async def root():
     """Welcome endpoint"""
     return {
-        "message": "Welcome to CodeExplain API",
+        "message": "Welcome to CodeXplain API",
         "version": "1.0.0",
         "docs": "/docs"
     }

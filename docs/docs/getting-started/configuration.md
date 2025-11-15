@@ -21,7 +21,7 @@ cp env.template .env
 ### Core
 
 ```bash
-APP_NAME=CodeExplain
+APP_NAME=CodeXplain
 ENV=development
 DEBUG=True
 SECRET_KEY=replace-with-strong-random-value

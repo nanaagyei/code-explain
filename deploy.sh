@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 🚀 CodeExplain Quick Deployment Script
-# This script automates the deployment process for CodeExplain
+# 🚀 CodeXplain Quick Deployment Script
+# This script automates the deployment process for CodeXplain
 
 set -e  # Exit on any error
 
-echo "🚀 Starting CodeExplain Deployment..."
+echo "🚀 Starting CodeXplain Deployment..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -113,8 +113,17 @@ deploy_backend() {
     
     # Activate virtual environment
     print_status "Activating virtual environment..."
-    source venv/bin/activate  # Linux/macOS
-    # For Windows: venv\Scripts\activate
+    # Detect OS and use appropriate activation script
+    if [ -f "venv/Scripts/activate" ]; then
+        # Windows (Git Bash)
+        source venv/Scripts/activate
+    elif [ -f "venv/bin/activate" ]; then
+        # Linux/macOS
+        source venv/bin/activate
+    else
+        print_error "Virtual environment activation script not found!"
+        exit 1
+    fi
     
     # Install dependencies
     print_status "Installing Python dependencies..."
@@ -127,15 +136,25 @@ deploy_backend() {
     # Test database connection
     print_status "Testing database connection..."
     python -c "
+import asyncio
+import sys
 from app.core.database import engine
 from sqlalchemy import text
-try:
-    with engine.connect() as conn:
-        result = conn.execute(text('SELECT 1'))
-        print('✅ Database connection successful!')
-except Exception as e:
-    print(f'❌ Database connection failed: {e}')
-    exit(1)
+
+async def test_connection():
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(text('SELECT 1'))
+            print('✅ Database connection successful!')
+        return True
+    except Exception as e:
+        print(f'❌ Database connection failed: {e}')
+        return False
+    finally:
+        await engine.dispose()
+
+if not asyncio.run(test_connection()):
+    sys.exit(1)
 "
     
     print_success "Backend deployment complete!"
@@ -178,7 +197,9 @@ start_services() {
     echo ""
     echo "📋 Next steps:"
     echo "1. Edit .env file with your OpenAI API key"
-    echo "2. Start backend: cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    echo "2. Start backend:"
+    echo "   Windows (Git Bash): cd backend && source venv/Scripts/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    echo "   Linux/macOS: cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
     echo "3. Start frontend: cd frontend && npm run dev"
     echo "4. Start docs: cd docs && npm start"
     echo ""
@@ -193,7 +214,7 @@ start_services() {
 
 # Main deployment function
 main() {
-    echo "🚀 CodeExplain Quick Deployment Script"
+    echo "🚀 CodeXplain Quick Deployment Script"
     echo "======================================"
     echo ""
     

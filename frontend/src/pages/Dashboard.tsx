@@ -16,7 +16,11 @@ import {
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
   CloudArrowUpIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  BoltIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { 
   FolderIcon as FolderSolidIcon,
@@ -144,10 +148,14 @@ export default function Dashboard() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return '✓';
-      case 'processing': return '⚡';
-      case 'failed': return '✗';
-      default: return '○';
+      case 'completed': 
+        return <CheckCircleIcon className="w-4 h-4 inline" />;
+      case 'processing': 
+        return <BoltIcon className="w-4 h-4 inline animate-pulse" />;
+      case 'failed': 
+        return <XCircleIcon className="w-4 h-4 inline" />;
+      default: 
+        return <div className="w-4 h-4 rounded-full border-2 border-gray-400 inline-block" />;
     }
   };
 
@@ -164,7 +172,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    CodeExplain
+                    CodeXplain
                   </h1>
                   <p className="text-xs text-gray-500 font-medium hidden sm:block">AI-Powered Documentation</p>
                 </div>
@@ -196,17 +204,36 @@ export default function Dashboard() {
                 <AcademicCapIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">AI Mentor</span>
               </Link>
-              <div className="hidden lg:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.username}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <button
+                  onClick={logout}
+                  className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition duration-200 shadow-md hover:shadow-lg flex items-center space-x-1 flex-shrink-0"
+                >
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
+                
+                {/* Profile Section */}
+                <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200">
+                  <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
+                    <UserCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                  </div>
+                  <div className="hidden sm:block text-left min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-[150px]">
+                      {user?.username || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[150px]">
+                      {user?.email || ''}
+                    </p>
+                  </div>
+                  {/* Mobile: Show only icon and username */}
+                  <div className="sm:hidden text-left min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 truncate max-w-[80px]">
+                      {user?.username || 'User'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={logout}
-                className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition duration-200 shadow-md hover:shadow-lg flex items-center space-x-1"
-              >
-                <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
             </div>
           </div>
         </div>
@@ -366,8 +393,9 @@ export default function Dashboard() {
                         {repo.name}
                       </h4>
                       <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 text-xs font-bold rounded-full border backdrop-blur-sm ${getStatusColor(repo.status)}`}>
-                          {getStatusIcon(repo.status)} {repo.status}
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full border backdrop-blur-sm flex items-center space-x-1 ${getStatusColor(repo.status)}`}>
+                          {getStatusIcon(repo.status)}
+                          <span>{repo.status}</span>
                         </span>
                         {/* Delete button positioned beside the status tag */}
                         <button
@@ -444,7 +472,7 @@ export default function Dashboard() {
             {!searchQuery && filterStatus === 'all' && (
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="px-8 py-4 bg-gradient-to-r from-primary-600 to-accent-600 text-white font-bold rounded-xl hover:from-primary-700 hover:to-accent-700 transition duration-200 shadow-lg hover:shadow-glow transform hover:-translate-y-1 inline-flex items-center space-x-2"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center space-x-2"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -458,25 +486,27 @@ export default function Dashboard() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform transition-all border border-neutral-200">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 max-w-2xl w-full max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] shadow-2xl transform transition-all border border-neutral-200 my-auto flex flex-col">
+            {/* Header - Fixed */}
+            <div className="flex justify-between items-start mb-4 sm:mb-6 flex-shrink-0">
+              <div className="flex-1 min-w-0 pr-2">
+                <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
                   Upload Repository
                 </h3>
-                <p className="text-sm text-neutral-600 mt-1">AI will analyze and document your code</p>
+                <p className="text-xs sm:text-sm text-neutral-600 mt-1">AI will analyze and document your code</p>
               </div>
               <button
                 onClick={() => setShowUploadModal(false)}
-                className="text-neutral-400 hover:text-neutral-600 text-3xl leading-none w-10 h-10 flex items-center justify-center hover:bg-neutral-100 rounded-xl transition duration-200"
+                className="text-neutral-400 hover:text-neutral-600 text-2xl sm:text-3xl leading-none w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-neutral-100 rounded-xl transition duration-200 flex-shrink-0"
+                aria-label="Close modal"
               >
                 ×
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-2 mb-6 bg-neutral-100 p-1 rounded-xl">
+            <div className="flex space-x-2 mb-4 sm:mb-6 bg-neutral-100 p-1 rounded-xl flex-shrink-0">
               <button
                 onClick={() => setUploadTab('files')}
                 className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
@@ -503,7 +533,8 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="space-y-6">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 pr-1 -mr-1">
               {/* Files Tab */}
               {uploadTab === 'files' && (
                 <>
@@ -516,7 +547,7 @@ export default function Dashboard() {
                       value={repositoryName}
                       onChange={(e) => setRepositoryName(e.target.value)}
                       placeholder="My Awesome Project"
-                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none font-medium text-sm sm:text-base"
                     />
                   </div>
 
@@ -526,25 +557,25 @@ export default function Dashboard() {
                     </label>
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200 ${
+                  className={`border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 lg:p-10 text-center cursor-pointer transition-all duration-200 ${
                     isDragActive
                       ? 'border-primary-500 bg-primary-50'
                       : 'border-neutral-300 hover:border-primary-400 hover:bg-neutral-50'
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <div className="mb-4 animate-float">
-                    <FolderIcon className="w-20 h-20 text-blue-500" />
+                  <div className="mb-3 sm:mb-4 animate-float flex justify-center items-center">
+                    <FolderIcon className="w-16 h-16 sm:w-20 sm:h-20 text-blue-500" />
                   </div>
-                  <p className="text-neutral-900 font-semibold text-lg mb-2">
+                  <p className="text-neutral-900 font-semibold text-base sm:text-lg mb-1 sm:mb-2">
                     {isDragActive ? 'Drop files here...' : 'Drag & drop code files'}
                   </p>
-                  <p className="text-neutral-600 text-sm mb-3">
+                  <p className="text-neutral-600 text-xs sm:text-sm mb-2 sm:mb-3">
                     or click to browse your computer
                   </p>
-                  <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  <div className="flex flex-wrap justify-center gap-2 mt-3 sm:mt-4">
                     {['Python', 'JavaScript', 'TypeScript', 'Java', 'C/C++', 'Go', 'Rust'].map(lang => (
-                      <span key={lang} className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-lg">
+                      <span key={lang} className="px-2 sm:px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-lg">
                         {lang}
                       </span>
                     ))}
@@ -552,18 +583,18 @@ export default function Dashboard() {
                 </div>
 
                 {selectedFiles.length > 0 && (
-                  <div className="mt-4 max-h-48 overflow-y-auto space-y-2">
+                  <div className="mt-4 max-h-40 sm:max-h-48 overflow-y-auto space-y-2">
                     {selectedFiles.map((file, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200 hover:border-primary-300 transition duration-200"
+                        className="flex items-center justify-between p-2 sm:p-3 bg-neutral-50 rounded-xl border border-neutral-200 hover:border-primary-300 transition duration-200"
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-accent-100 rounded-lg flex items-center justify-center">
-                            <DocumentTextIcon className="w-5 h-5 text-primary-600" />
+                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-100 to-accent-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <DocumentTextIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-neutral-900">{file.name}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-semibold text-neutral-900 truncate">{file.name}</p>
                             <p className="text-xs text-neutral-500">
                               {(file.size / 1024).toFixed(1)} KB
                             </p>
@@ -571,9 +602,10 @@ export default function Dashboard() {
                         </div>
                         <button
                           onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-danger-500 hover:text-danger-700 hover:bg-danger-50 rounded-lg p-2 transition duration-200"
+                          className="text-danger-500 hover:text-danger-700 hover:bg-danger-50 rounded-lg p-1.5 sm:p-2 transition duration-200 flex-shrink-0"
+                          aria-label="Remove file"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -597,7 +629,7 @@ export default function Dashboard() {
                       value={githubUrl}
                       onChange={(e) => setGithubUrl(e.target.value)}
                       placeholder="https://github.com/username/repository"
-                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none font-medium text-sm sm:text-base"
                     />
                     <p className="mt-2 text-xs text-neutral-600">
                       Paste any public GitHub repository URL to analyze and document
@@ -608,7 +640,7 @@ export default function Dashboard() {
                     <label className="block text-sm font-semibold text-neutral-900 mb-2">
                       Maximum Files to Process
                     </label>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
                       <input
                         type="range"
                         min="10"
@@ -625,9 +657,9 @@ export default function Dashboard() {
                           max="200"
                           value={maxFiles}
                           onChange={(e) => setMaxFiles(Math.min(200, Math.max(10, parseInt(e.target.value) || 10)))}
-                          className="w-20 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-center font-bold text-neutral-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                          className="w-16 sm:w-20 px-2 sm:px-3 py-1.5 sm:py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-center font-bold text-neutral-900 focus:ring-2 focus:ring-primary-500 outline-none text-sm sm:text-base"
                         />
-                        <span className="text-sm text-neutral-600 font-medium">files</span>
+                        <span className="text-xs sm:text-sm text-neutral-600 font-medium">files</span>
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-neutral-600">
@@ -635,12 +667,12 @@ export default function Dashboard() {
                     </p>
                   </div>
 
-                  <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-4 rounded-xl border border-primary-100">
-                    <div className="flex items-start space-x-3">
-                      <svg className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-3 sm:p-4 rounded-xl border border-primary-100">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      <div className="text-sm">
+                      <div className="text-xs sm:text-sm">
                         <p className="font-semibold text-primary-900 mb-1">How it works:</p>
                         <ul className="text-primary-800 space-y-1 list-disc list-inside">
                           <li>Repository will be cloned (shallow clone)</li>
@@ -656,11 +688,11 @@ export default function Dashboard() {
 
               {/* Prompt Template Selector */}
               <div>
-                <label className="block text-sm font-semibold text-neutral-900 mb-3 flex items-center space-x-2">
+                <label className="block text-sm font-semibold text-neutral-900 mb-2 sm:mb-3 flex items-center space-x-2">
                   <PencilSquareIcon className="w-4 h-4" />
                   <span>Documentation Style</span>
                 </label>
-                <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+                <div className="bg-neutral-50 rounded-xl p-3 sm:p-4 border border-neutral-200">
                   <PromptTemplateSelector
                     selectedTemplateId={selectedPromptTemplate}
                     onTemplateSelect={setSelectedPromptTemplate}
@@ -671,11 +703,14 @@ export default function Dashboard() {
                   Choose how you want your code documented. Different styles for different audiences.
                 </p>
               </div>
+            </div>
 
-              <div className="flex space-x-3">
+            {/* Footer - Fixed */}
+            <div className="flex-shrink-0 pt-4 sm:pt-6 border-t border-neutral-200 mt-4 sm:mt-6">
+              <div className="flex space-x-2 sm:space-x-3">
                 <button
                   onClick={() => setShowUploadModal(false)}
-                  className="flex-1 px-4 py-3 border-2 border-neutral-300 text-neutral-700 font-semibold rounded-xl hover:bg-neutral-50 transition duration-200"
+                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-neutral-300 text-neutral-700 font-semibold rounded-xl hover:bg-neutral-50 transition duration-200 text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -685,11 +720,11 @@ export default function Dashboard() {
                     (uploadTab === 'files' && (!repositoryName.trim() || selectedFiles.length === 0 || uploadMutation.isPending)) ||
                     (uploadTab === 'github' && (!githubUrl.trim() || githubMutation.isPending))
                   }
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base"
                 >
                   {(uploadMutation.isPending || githubMutation.isPending) ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -704,11 +739,11 @@ export default function Dashboard() {
               </div>
 
               {(uploadMutation.isError || githubMutation.isError) && (
-                <div className="p-4 bg-danger-50 border border-danger-200 rounded-xl flex items-center space-x-3">
-                  <svg className="w-5 h-5 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-4 p-3 sm:p-4 bg-danger-50 border border-danger-200 rounded-xl flex items-center space-x-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-danger-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-danger-700 text-sm font-medium">
+                  <p className="text-danger-700 text-xs sm:text-sm font-medium">
                     {(uploadMutation.error as Error)?.message || 
                      (githubMutation.error as Error)?.message || 
                      'Operation failed'}

@@ -121,14 +121,14 @@ export default function Register() {
 
       {/* Right Side - Register Form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
-        <div className="mx-auto w-full max-w-sm">
+        <div className="mx-auto w-full max-w-md">
           {/* Logo */}
           <div className="mb-10">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-10 h-10 bg-gray-950 rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl font-bold">C</span>
               </div>
-              <h1 className="text-2xl font-semibold text-gray-950">CodeExplain</h1>
+              <h1 className="text-2xl font-semibold text-gray-950">CodeXplain</h1>
             </div>
             <h2 className="text-3xl font-bold text-gray-950 mb-2">Create your account</h2>
             <p className="text-gray-600">Start generating AI-powered documentation</p>
@@ -225,7 +225,7 @@ export default function Register() {
           {/* Terms */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              By continuing, you agree to CodeExplain's{' '}
+              By continuing, you agree to CodeXplain's{' '}
               <a href="#" className="underline hover:text-gray-700">Terms of Service</a>
               {' '}and{' '}
               <a href="#" className="underline hover:text-gray-700">Privacy Policy</a>

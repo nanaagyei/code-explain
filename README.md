@@ -1,4 +1,4 @@
-# 🚀 CodeExplain
+# 🚀 CodeXplain
 
 **AI-Powered Code Documentation & Analysis Platform**
 
@@ -350,5 +350,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <strong>Built with ❤️ by the CodeExplain Team</strong>
+  <strong>Built with ❤️ by the CodeXplain Team</strong>
 </div>

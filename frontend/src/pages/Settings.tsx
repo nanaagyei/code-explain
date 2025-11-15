@@ -4,6 +4,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import type { UserApiKey, UserApiKeyCreate, UserApiKeyUpdate } from '../types/index';
+import { 
+  Key, 
+  Cloud, 
+  Brain, 
+  Bot, 
+  CheckCircle2, 
+  Building2, 
+  Phone,
+  BarChart3,
+  XCircle,
+  AlertCircle,
+  UserCircle
+} from 'lucide-react';
 
 export default function Settings() {
   const { user, logout } = useAuthStore();
@@ -68,10 +81,10 @@ export default function Settings() {
 
   const getProviderIcon = (provider: string) => {
     switch (provider.toLowerCase()) {
-      case 'openai': return '🤖';
-      case 'anthropic': return '🧠';
-      case 'azure': return '☁️';
-      default: return '🔑';
+      case 'openai': return <Bot className="w-5 h-5" />;
+      case 'anthropic': return <Brain className="w-5 h-5" />;
+      case 'azure': return <Cloud className="w-5 h-5" />;
+      default: return <Key className="w-5 h-5" />;
     }
   };
 
@@ -108,17 +121,34 @@ export default function Settings() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.username}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={logout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition duration-200"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition duration-200 flex-shrink-0"
               >
                 Sign Out
               </button>
+              
+              {/* Profile Section */}
+              <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
+                  <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                </div>
+                <div className="hidden md:block text-left min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-[150px]">
+                    {user?.username || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[150px]">
+                    {user?.email || ''}
+                  </p>
+                </div>
+                {/* Mobile: Show only icon and username */}
+                <div className="md:hidden text-left min-w-0">
+                  <p className="text-xs font-semibold text-gray-900 truncate max-w-[80px]">
+                    {user?.username || 'User'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -130,7 +160,10 @@ export default function Settings() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">🔑 API Keys</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center space-x-2">
+                <Key className="w-6 h-6" />
+                <span>API Keys</span>
+              </h2>
               <p className="text-gray-600">
                 Manage your API keys for different AI providers. Your keys are encrypted and stored securely.
               </p>
@@ -167,7 +200,7 @@ export default function Settings() {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
-                        <span className="text-2xl">{getProviderIcon(key.provider)}</span>
+                        <span className="text-gray-600">{getProviderIcon(key.provider)}</span>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">{key.name}</h3>
                           <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getProviderColor(key.provider)}`}>
@@ -229,7 +262,9 @@ export default function Settings() {
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-              <div className="text-6xl mb-4">🔑</div>
+              <div className="mb-4 flex justify-center">
+                <Key className="w-16 h-16 text-gray-400" />
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">No API keys yet</h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 Add your first API key to start using custom AI providers for documentation generation.
@@ -246,7 +281,10 @@ export default function Settings() {
 
         {/* Usage Statistics */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Usage Statistics</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+            <BarChart3 className="w-6 h-6" />
+            <span>Usage Statistics</span>
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
               <div className="flex items-center justify-between">
@@ -257,7 +295,7 @@ export default function Settings() {
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">📞</span>
+                  <Phone className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </div>
@@ -271,7 +309,7 @@ export default function Settings() {
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">✅</span>
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </div>
@@ -285,7 +323,7 @@ export default function Settings() {
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-purple-200 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">🏢</span>
+                  <Building2 className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
             </div>
@@ -387,9 +425,10 @@ export default function Settings() {
 
             {addKeyMutation.isError && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-700 text-sm text-center font-medium">
-                  ❌ Failed to add API key
-                </p>
+                <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
+                  <XCircle className="w-5 h-5" />
+                  <span>Failed to add API key</span>
+                </div>
               </div>
             )}
           </div>
@@ -461,9 +500,10 @@ export default function Settings() {
 
             {updateKeyMutation.isError && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-700 text-sm text-center font-medium">
-                  ❌ Failed to update API key
-                </p>
+                <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
+                  <XCircle className="w-5 h-5" />
+                  <span>Failed to update API key</span>
+                </div>
               </div>
             )}
           </div>

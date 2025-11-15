@@ -52,9 +52,9 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/android-chrome-512x512.png',
     navbar: {
-      title: 'CodeExplain',
+      title: 'CodeXplain',
       logo: {
-        alt: 'CodeExplain Logo',
+        alt: 'CodeXplain Logo',
         src: 'img/android-chrome-192x192.png',
       },
       items: [
@@ -110,7 +110,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} CodeExplain. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} CodeXplain. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

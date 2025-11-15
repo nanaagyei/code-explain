@@ -8,6 +8,7 @@ import {
   ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 
 interface MentorHintProps {
   fileId: number;
@@ -171,8 +172,9 @@ export default function MentorHint({ fileId, repositoryId, onDismiss, className 
                   </p>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                      ⏱️ {suggestion.estimatedTime}
+                    <span className="text-xs text-gray-500 flex items-center space-x-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{suggestion.estimatedTime}</span>
                     </span>
                     <Link
                       to="/mentor"

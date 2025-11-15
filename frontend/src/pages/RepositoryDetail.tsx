@@ -3,6 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import type { CodeFile, WebSocketMessage } from '../types/index';
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Zap, 
+  Clock, 
+  FolderOpen,
+  ClipboardList,
+  AlertCircle
+} from 'lucide-react';
 
 export default function RepositoryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,13 +47,13 @@ export default function RepositoryDetail() {
     ws.onopen = () => {
       console.log('WebSocket connected');
       setWsConnected(true);
-      setLogs((prev) => [...prev, '🔌 Connected to server']);
+      setLogs((prev) => [...prev, '[CONNECTED] Connected to server']);
     };
 
     ws.onmessage = (event) => {
       const data: WebSocketMessage = JSON.parse(event.data);
       
-      setLogs((prev) => [...prev, `📡 ${data.message}`]);
+      setLogs((prev) => [...prev, `[INFO] ${data.message}`]);
 
       if (data.type === 'progress' && data.progress !== undefined) {
         setProgress(data.progress);
@@ -54,22 +63,22 @@ export default function RepositoryDetail() {
         setProgress(100);
         // Invalidate query to refetch
         queryClient.invalidateQueries({ queryKey: ['repository', id] });
-        setLogs((prev) => [...prev, '✅ All processing complete!']);
+        setLogs((prev) => [...prev, '[SUCCESS] All processing complete!']);
       } else if (data.type === 'failed') {
         setProgress(0);
         queryClient.invalidateQueries({ queryKey: ['repository', id] });
-        setLogs((prev) => [...prev, '❌ Processing failed']);
+        setLogs((prev) => [...prev, '[ERROR] Processing failed']);
       }
     };
 
     ws.onerror = () => {
       setWsConnected(false);
-      setLogs((prev) => [...prev, '❌ Connection error']);
+      setLogs((prev) => [...prev, '[ERROR] Connection error']);
     };
 
     ws.onclose = () => {
       setWsConnected(false);
-      setLogs((prev) => [...prev, '🔌 Disconnected']);
+      setLogs((prev) => [...prev, '[DISCONNECTED] Disconnected from server']);
       wsRef.current = null;
     };
 
@@ -92,10 +101,10 @@ export default function RepositoryDetail() {
 
   const getFileIcon = (status: string) => {
     switch (status) {
-      case 'completed': return '✅';
-      case 'processing': return '⚡';
-      case 'failed': return '❌';
-      default: return '⏳';
+      case 'completed': return <CheckCircle2 className="w-5 h-5" />;
+      case 'processing': return <Zap className="w-5 h-5 animate-pulse" />;
+      case 'failed': return <XCircle className="w-5 h-5" />;
+      default: return <Clock className="w-5 h-5" />;
     }
   };
 
@@ -114,7 +123,9 @@ export default function RepositoryDetail() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">😕</div>
+          <div className="mb-4 flex justify-center">
+            <AlertCircle className="w-16 h-16 text-gray-400" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Repository not found</h2>
           <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to dashboard
@@ -154,8 +165,9 @@ export default function RepositoryDetail() {
         {repository.status === 'processing' && (
           <div className="mb-6 bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                ⚡ Processing Documentation...
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                <Zap className="w-5 h-5 animate-pulse" />
+                <span>Processing Documentation...</span>
               </h3>
               <span className="text-sm font-medium text-blue-600">
                 {Math.round(progress)}%
@@ -202,8 +214,9 @@ export default function RepositoryDetail() {
 
         {/* Files List */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            📂 Files ({files.length})
+          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
+            <FolderOpen className="w-6 h-6" />
+            <span>Files ({files.length})</span>
           </h3>
           
           <div className="space-y-3">
@@ -219,7 +232,7 @@ export default function RepositoryDetail() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{getFileIcon(file.status)}</span>
+                    <span className="text-gray-600">{getFileIcon(file.status)}</span>
                     <div>
                       <p className="font-medium text-gray-900">{file.file_path}</p>
                       <div className="flex items-center space-x-4 mt-1">
@@ -251,7 +264,8 @@ export default function RepositoryDetail() {
         {logs.length > 0 && (
           <div className="bg-gray-900 rounded-2xl shadow-xl p-6 overflow-hidden">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <span className="mr-2">📋</span> Processing Logs
+              <ClipboardList className="w-5 h-5 mr-2" />
+              <span>Processing Logs</span>
             </h3>
             <div className="bg-black/30 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-sm">
               {logs.map((log, idx) => (
