@@ -13,11 +13,11 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 /**
  * Debounce function calls to prevent excessive API requests
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   return useCallback(
     ((...args: Parameters<T>) => {
@@ -36,7 +36,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function calls to limit execution frequency
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {
@@ -94,9 +94,9 @@ export function useLoadingState() {
  * Cache management for API responses
  */
 export class ApiCache {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private cache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
 
-  set(key: string, data: any, ttl: number = 300000): void { // 5 minutes default
+  set(key: string, data: unknown, ttl: number = 300000): void { // 5 minutes default
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -104,7 +104,7 @@ export class ApiCache {
     });
   }
 
-  get(key: string): any | null {
+  get(key: string): unknown | null {
     const cached = this.cache.get(key);
     if (!cached) return null;
 
@@ -151,8 +151,8 @@ export const apiCache = new ApiCache();
 /**
  * Memoized component props helper
  */
-export function useMemoizedProps<T extends Record<string, any>>(props: T): T {
-  return useMemo(() => props, Object.values(props));
+export function useMemoizedProps<T extends Record<string, unknown>>(props: T): T {
+  return useMemo(() => props, [props]);
 }
 
 /**
@@ -285,7 +285,7 @@ export function useMemoryMonitor() {
 
   const checkMemory = useCallback(() => {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory;
       setMemoryUsage({
         used: memory.usedJSHeapSize,
         total: memory.totalJSHeapSize,
@@ -304,7 +304,7 @@ export function useCancellableRequest() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const makeCancellableRequest = useCallback(async (
-    requestFn: (signal: AbortSignal) => Promise<any>
+    requestFn: (signal: AbortSignal) => Promise<unknown>
   ) => {
     // Cancel previous request
     if (abortControllerRef.current) {
