@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LightBulbIcon, 
   XMarkIcon, 
@@ -12,7 +12,7 @@ import { Clock } from 'lucide-react';
 
 interface MentorHintProps {
   fileId: number;
-  repositoryId: number;
+  repositoryId?: number; // Optional for now, will be used when API integration is added
   onDismiss?: () => void;
   className?: string;
 }
@@ -27,12 +27,11 @@ interface LearningSuggestion {
   resources?: string[];
 }
 
-export default function MentorHint({ fileId, repositoryId, onDismiss, className = '' }: MentorHintProps) {
+export default function MentorHint({ fileId, onDismiss, className = '' }: MentorHintProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [suggestions, setSuggestions] = useState<LearningSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   // Mock suggestions for now - in real implementation, this would come from AI analysis
   const mockSuggestions: LearningSuggestion[] = [

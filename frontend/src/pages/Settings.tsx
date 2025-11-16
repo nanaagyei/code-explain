@@ -14,7 +14,6 @@ import {
   Phone,
   BarChart3,
   XCircle,
-  AlertCircle,
   UserCircle
 } from 'lucide-react';
 
