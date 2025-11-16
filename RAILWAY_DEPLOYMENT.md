@@ -82,10 +82,14 @@ Skip to Step 2!
 1. Click on the service (it might be named after your repo)
 2. Go to **"Settings"** tab
 3. **IMPORTANT - Set Root Directory:**
-   - Find **"Root Directory"** field
-   - Set it to: `backend` (without quotes, just the word `backend`)
+   - Find **"Root Directory"** field (might be under "Source" or "Build" section)
+   - **Try one of these formats:**
+     - `backend` (without slash)
+     - `/backend` (with leading slash - Railway sometimes uses this)
+     - `./backend` (with dot-slash)
    - This tells Railway to use `backend/` as the build context
    - This is critical - without this, Railway will look for files in the repo root
+   - **If you see "/backend" as an option, select that**
 4. Configure other settings:
    - **Build Command**: Leave empty (Railway will use Dockerfile)
    - **Start Command**: Leave empty (Railway will use Dockerfile CMD)
@@ -161,10 +165,12 @@ openssl rand -hex 32  # For JWT_SECRET
 3. Railway will automatically detect and use `backend/Dockerfile`
 4. The Dockerfile is already configured to use Railway's `$PORT` variable
 
-**Troubleshooting:** If you get `requirements.txt: not found`:
-- Verify Root Directory is exactly `backend` (not `./backend` or `/backend`)
-- Make sure `backend/requirements.txt` exists in your Git repository
-- Check that the file is committed (not in .gitignore)
+**Troubleshooting:** If you get `requirements.txt: not found` or `Dockerfile does not exist`:
+- **Root Directory format**: Railway may accept `/backend` (with leading slash) - try that if `backend` doesn't work
+- **Verify the setting**: After setting Root Directory, check that Railway shows the correct path
+- **Check file exists**: Make sure `backend/requirements.txt` and `backend/Dockerfile` exist in your Git repository
+- **Verify committed**: Check that files are committed to Git (not in .gitignore)
+- **Alternative**: If Root Directory doesn't work, you can specify Dockerfile path explicitly in Railway's build settings
 
 ### 5.5: Configure Port
 
@@ -190,8 +196,14 @@ openssl rand -hex 32  # For JWT_SECRET
 
 1. Click on the frontend service
 2. Go to **"Settings"** tab
-3. Configure:
-   - **Root Directory**: `frontend` (important!)
+3. **IMPORTANT - Set Root Directory:**
+   - Find **"Root Directory"** field
+   - **Try one of these formats:**
+     - `frontend` (without slash)
+     - `/frontend` (with leading slash - Railway sometimes uses this)
+     - `./frontend` (with dot-slash)
+   - **If you see "/frontend" as an option, select that**
+4. Configure other settings:
    - **Build Command**: Leave empty (Railway will use Dockerfile)
    - **Start Command**: Leave empty (Railway will use Dockerfile CMD)
 
@@ -364,14 +376,22 @@ Railway auto-deploys by default, but you can configure:
    - Verify `CORS_ORIGINS` includes frontend URL
    - Must include `https://` protocol
    - No trailing slashes
+   - Format: `["https://your-frontend-url.railway.app"]`
 
 2. **Check API URL:**
    - Verify `VITE_API_BASE_URL` in frontend variables
-   - Should match backend Railway URL
+   - Should match backend Railway URL (e.g., `https://your-backend-name.railway.app`)
+   - Must include `https://` protocol
+   - No trailing slash
 
 3. **Check browser console:**
    - Open browser DevTools → Console
-   - Look for CORS errors
+   - Look for CORS errors or network errors
+   - The frontend makes direct API calls (no nginx proxy on Railway)
+
+4. **Verify backend is running:**
+   - Check backend service logs
+   - Visit backend URL directly: `https://your-backend-url.railway.app/health`
 
 ### Database connection errors
 
@@ -398,12 +418,14 @@ Railway auto-deploys by default, but you can configure:
    - Check that files exist in the root directory (requirements.txt for backend, package.json for frontend)
    - Verify all dependencies in requirements.txt/package.json
 
-3. **"File not found" errors:**
-   - If you see `requirements.txt: not found`:
-     - Verify Root Directory is set to `backend` in service settings
-     - Railway should use `backend/` as build context
-     - The Dockerfile should be at `backend/Dockerfile`
+3. **"File not found" or "Dockerfile does not exist" errors:**
+   - **Root Directory format**: Try `/backend` (with leading slash) if `backend` doesn't work
+   - Verify Root Directory is set correctly in service settings
+   - Railway should use `backend/` as build context when Root Directory is set
+   - The Dockerfile should be at `backend/Dockerfile` in your repo
+   - **If Root Directory option shows "/backend", use that**
    - If files still not found, check that they're committed to Git
+   - Verify files exist: `backend/Dockerfile`, `backend/requirements.txt`
 
 ## Railway-Specific Tips
 
