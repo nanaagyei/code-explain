@@ -81,8 +81,12 @@ Skip to Step 2!
 
 1. Click on the service (it might be named after your repo)
 2. Go to **"Settings"** tab
-3. Configure:
-   - **Root Directory**: `backend` (important!)
+3. **IMPORTANT - Set Root Directory:**
+   - Find **"Root Directory"** field
+   - Set it to: `backend` (without quotes, just the word `backend`)
+   - This tells Railway to use `backend/` as the build context
+   - This is critical - without this, Railway will look for files in the repo root
+4. Configure other settings:
    - **Build Command**: Leave empty (Railway will use Dockerfile)
    - **Start Command**: Leave empty (Railway will use Dockerfile CMD)
 
@@ -147,19 +151,32 @@ openssl rand -hex 32  # For SECRET_KEY
 openssl rand -hex 32  # For JWT_SECRET
 ```
 
-### 5.4: Configure Build Settings
+### 5.4: Verify Build Settings
 
-1. Go to **"Settings"** → **"Build"**
-2. Set **"Root Directory"**: `backend` (this tells Railway where to find the Dockerfile)
+1. Go to **"Settings"** tab (not a separate Build section)
+2. **Double-check "Root Directory"** is set to: `backend`
+   - This is the most important setting!
+   - Railway uses this as the Docker build context
+   - All `COPY` commands in Dockerfile will be relative to this directory
 3. Railway will automatically detect and use `backend/Dockerfile`
 4. The Dockerfile is already configured to use Railway's `$PORT` variable
+
+**Troubleshooting:** If you get `requirements.txt: not found`:
+- Verify Root Directory is exactly `backend` (not `./backend` or `/backend`)
+- Make sure `backend/requirements.txt` exists in your Git repository
+- Check that the file is committed (not in .gitignore)
 
 ### 5.5: Configure Port
 
 1. Go to **"Settings"** → **"Networking"**
-2. Railway automatically detects the port from Dockerfile
+2. Railway will show port configuration options:
+   - **Option A (Recommended)**: Let Railway auto-detect (it will set `$PORT` automatically)
+   - **Option B**: Manually set port to `8000` for backend
 3. Railway will generate a public URL like: `https://your-backend-name.railway.app`
-4. **Important**: Railway sets the `$PORT` environment variable automatically - our Dockerfile uses this
+4. **Important**: 
+   - If Railway auto-detects, it sets `$PORT` environment variable automatically
+   - If you manually set port to 8000, Railway will still work, but `$PORT` may not be set
+   - Our Dockerfile uses `${PORT:-8000}` which defaults to 8000 if `$PORT` is not set
 
 ## Step 6: Deploy Frontend Service
 
@@ -199,19 +216,40 @@ VITE_API_BASE_URL=https://your-backend-name.railway.app
 1. Go to **"Settings"** → **"Build"**
 2. With **Root Directory** set to `frontend`, Railway will automatically find `frontend/Dockerfile`
 3. Railway will build the frontend using Docker
-4. The frontend Dockerfile uses Nginx which will serve on port 80 (Railway handles port mapping)
+4. The frontend Dockerfile uses Nginx which will serve on port 80
+
+### 6.6: Configure Frontend Port
+
+1. Go to **"Settings"** → **"Networking"**
+2. Railway will show port configuration:
+   - **Option A**: Let Railway auto-detect (usually port 80 for Nginx)
+   - **Option B**: Manually set port (if needed, but usually not required for Nginx)
+3. Railway will generate a public URL like: `https://your-frontend-name.railway.app`
 
 ## Step 7: Update CORS After Deployment
 
 Once both services are deployed:
 
-1. Get your frontend URL from Railway dashboard
-2. Go to **Backend Service** → **"Variables"**
-3. Update `CORS_ORIGINS`:
-   ```env
-   CORS_ORIGINS=["https://your-frontend-name.railway.app"]
-   ```
-4. Railway will automatically redeploy
+1. **Get your frontend URL:**
+   - Go to **Frontend Service** → **"Settings"** → **"Networking"**
+   - Copy the public URL (e.g., `https://your-frontend-name.railway.app`)
+
+2. **Update CORS in backend:**
+   - Go to **Backend Service** → **"Variables"** tab
+   - Find `CORS_ORIGINS` variable
+   - Update it with your frontend URL:
+     ```env
+     CORS_ORIGINS=["https://your-frontend-name.railway.app"]
+     ```
+   - **Important**: Use the exact URL from Railway (with `https://` and no trailing slash)
+   - The format should be a JSON array: `["https://url1.com","https://url2.com"]`
+
+3. **Save changes** - Railway will automatically redeploy the backend
+
+4. **Verify CORS is working:**
+   - Open browser DevTools → Console
+   - Visit your frontend URL
+   - Check for any CORS errors
 
 ## Step 8: Run Database Migrations
 
@@ -354,8 +392,18 @@ Railway auto-deploys by default, but you can configure:
 
 2. **Common fixes:**
    - Ensure Dockerfile exists and is correct
-   - Check Dockerfile path in settings
+   - **Verify Root Directory is set correctly:**
+     - Backend: `backend`
+     - Frontend: `frontend`
+   - Check that files exist in the root directory (requirements.txt for backend, package.json for frontend)
    - Verify all dependencies in requirements.txt/package.json
+
+3. **"File not found" errors:**
+   - If you see `requirements.txt: not found`:
+     - Verify Root Directory is set to `backend` in service settings
+     - Railway should use `backend/` as build context
+     - The Dockerfile should be at `backend/Dockerfile`
+   - If files still not found, check that they're committed to Git
 
 ## Railway-Specific Tips
 
@@ -368,16 +416,33 @@ Railway uses this order:
 
 ### 2. Port Configuration
 
-Railway automatically sets `$PORT` environment variable. Your Dockerfile should use:
-```dockerfile
-EXPOSE $PORT
-CMD ["gunicorn", "app.main:app", "--bind", "0.0.0.0:$PORT"]
-```
+**How Railway handles ports:**
 
-Or update backend Dockerfile to use Railway's PORT:
-```dockerfile
-CMD ["sh", "-c", "alembic upgrade head && gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120"]
-```
+1. **Auto-detection (Recommended)**:
+   - Railway reads the `EXPOSE` directive in your Dockerfile
+   - Automatically sets `$PORT` environment variable
+   - Maps traffic to your service
+
+2. **Manual port setting**:
+   - Go to **Service** → **"Settings"** → **"Networking"**
+   - You can manually set a port (e.g., 8000 for backend, 80 for frontend)
+   - Railway will still work, but `$PORT` may not be automatically set
+
+3. **Our Dockerfile configuration**:
+   ```dockerfile
+   EXPOSE 8000
+   CMD ["sh", "-c", "... --bind 0.0.0.0:${PORT:-8000} ..."]
+   ```
+   - Uses `${PORT:-8000}` which defaults to 8000 if `$PORT` is not set
+   - Works with both auto-detection and manual port configuration
+
+**For Backend:**
+- Port 8000 is standard
+- Railway will auto-detect from `EXPOSE 8000` in Dockerfile
+
+**For Frontend:**
+- Port 80 is standard for Nginx
+- Railway will auto-detect from `EXPOSE 80` in Dockerfile
 
 ### 3. Resource Limits
 
@@ -438,15 +503,32 @@ Follow these steps in order:
 2. ✅ **Add PostgreSQL** → Get connection string
 3. ✅ **Add Redis** → Get connection string
 4. ✅ **Create Backend Service**:
-   - Root Directory: `backend`
+   - **Root Directory**: `backend` (CRITICAL - set this first!)
    - Add environment variables (see Step 5.3)
+   - Configure port (8000 or auto-detect)
    - Deploy and get backend URL
 5. ✅ **Create Frontend Service**:
-   - Root Directory: `frontend`
+   - **Root Directory**: `frontend` (CRITICAL - set this first!)
    - Set `VITE_API_BASE_URL` to backend URL
+   - Configure port (80 or auto-detect)
    - Deploy and get frontend URL
-6. ✅ **Update CORS** in backend with frontend URL
+6. ✅ **Update CORS** in backend with frontend URL (see Step 7)
 7. ✅ **Test deployment** → Visit frontend URL
+
+## ⚡ Quick CORS Update (After Both Services Deploy)
+
+If you already have both services deployed and just need to update CORS:
+
+1. **Get Frontend URL:**
+   - Frontend Service → Settings → Networking
+   - Copy the URL (e.g., `https://codexplain-frontend.railway.app`)
+
+2. **Update Backend CORS:**
+   - Backend Service → Variables tab
+   - Find `CORS_ORIGINS`
+   - Set to: `["https://your-frontend-url.railway.app"]`
+   - Format: JSON array with quotes, no trailing slash
+   - Save → Railway auto-redeploys
 
 ## Quick Reference
 
