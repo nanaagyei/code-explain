@@ -26,10 +26,21 @@ from app.models.batch_job import BatchJob, BatchJobItem
 # access to the values within the .ini file in use.
 config = context.config
 
-# Get database URL from our settings
-settings = get_settings()
+# Get database URL from our settings or environment variable
+try:
+    settings = get_settings()
+    database_url = settings.database_url
+except Exception:
+    # Fallback to environment variable directly if Settings fails
+    import os
+    database_url = os.getenv("DATABASE_URL", "")
+    if not database_url:
+        raise ValueError(
+            "DATABASE_URL environment variable is required. "
+            "Please set it in Railway's Variables tab for your backend service."
+        )
+
 # Ensure the URL uses asyncpg driver for async operations
-database_url = settings.database_url
 if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif database_url.startswith("postgresql+psycopg2://"):
