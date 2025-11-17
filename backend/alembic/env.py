@@ -28,7 +28,13 @@ config = context.config
 
 # Get database URL from our settings
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Ensure the URL uses asyncpg driver for async operations
+database_url = settings.database_url
+if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
+    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif database_url.startswith("postgresql+psycopg2://"):
+    database_url = database_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
