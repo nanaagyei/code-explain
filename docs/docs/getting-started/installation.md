@@ -273,7 +273,7 @@ Once installation is complete:
 
 1. **[Quick Start Guide](./quick-start.md)** - Create your first documentation
 2. **[Configuration Guide](./configuration.md)** - Customize CodeExplain
-3. **[Features Overview](../features/)** - Explore all available features
+3. **[Features Overview](/docs/features/ai-documentation)** - Explore all available features
 
 ---
 

@@ -238,8 +238,8 @@ Uses recursive approach with base cases for n <= 1.
 Now that you've created your first documentation:
 
 1. **[Configuration Guide](./configuration.md)** - Customize CodeExplain for your needs
-2. **[Features Overview](../features/)** - Explore all available features
-3. **[API Reference](../api/)** - Integrate CodeExplain into your workflow
+2. **[Features Overview](/docs/features/ai-documentation)** - Explore all available features
+3. **[API Reference](/docs/api/backend-api)** - Integrate CodeExplain into your workflow
 
 ## Getting Help
 
