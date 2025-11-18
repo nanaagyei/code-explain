@@ -14,6 +14,10 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Verify build output exists
+RUN ls -la /app/dist || (echo "ERROR: Build failed - dist directory not found" && exit 1)
+RUN test -f /app/dist/index.html || (echo "ERROR: Build failed - index.html not found" && exit 1)
+
 # Production stage
 FROM nginx:alpine
 

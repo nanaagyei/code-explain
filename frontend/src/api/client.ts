@@ -315,7 +315,9 @@ class ApiClient {
   
   createWebSocket(repositoryId: number): WebSocket {
     const token = localStorage.getItem('access_token');
-    const wsUrl = `ws://localhost:8000/repositories/ws/${repositoryId}${token ? `?token=${token}` : ''}`;
+    // Convert HTTP URL to WebSocket URL
+    const baseUrl = API_BASE_URL.replace(/^http/, 'ws');
+    const wsUrl = `${baseUrl}/repositories/ws/${repositoryId}${token ? `?token=${token}` : ''}`;
     return new WebSocket(wsUrl);
   }
 }

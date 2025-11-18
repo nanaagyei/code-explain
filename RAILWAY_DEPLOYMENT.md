@@ -242,7 +242,14 @@ Railway works best with the existing Dockerfile. Make sure `frontend/Dockerfile`
 
 ### 6.4: Add Frontend Environment Variables
 
-Go to **"Variables"** tab and add:
+**⚠️ CRITICAL: VITE_API_BASE_URL must be set BEFORE building!**
+
+Vite replaces environment variables at BUILD time, not runtime. You MUST set this variable before Railway builds the frontend.
+
+1. Go to your **Frontend service** in Railway
+2. Click on **"Variables"** tab
+3. Click **"+ New Variable"**
+4. Add this variable:
 
 ```env
 # API Base URL - Use your backend Railway URL
@@ -250,7 +257,19 @@ Go to **"Variables"** tab and add:
 VITE_API_BASE_URL=https://your-backend-name.railway.app
 ```
 
-**Important:** You'll need to update this after the backend deploys and you get its URL.
+**Important Notes:**
+- **Set this BEFORE the first build** - If you've already built, you need to:
+  1. Add the variable
+  2. Trigger a new deployment (Railway will rebuild automatically)
+- Get the backend URL from: **Backend Service** → **"Settings"** → **"Networking"** → Copy the public URL
+- Use `https://` (not `http://`)
+- No trailing slash
+- Example: `VITE_API_BASE_URL=https://code-xplain-backend.up.railway.app`
+
+**After setting the variable:**
+- Railway will automatically trigger a new build
+- The build will include the API URL in the compiled JavaScript
+- The frontend will use this URL for all API calls
 
 ### 6.5: Configure Frontend Build Settings
 
@@ -438,6 +457,52 @@ Railway auto-deploys by default, but you can configure:
 2. **Check database is running:**
    - Go to PostgreSQL service → **"Metrics"**
    - Should show active connections
+
+### Frontend shows error or blank page
+
+1. **Check browser console:**
+   - Open browser DevTools (F12)
+   - Go to **Console** tab
+   - Look for errors (especially CORS or network errors)
+
+2. **Common issues and fixes:**
+
+   **Issue: "Failed to fetch" or CORS errors**
+   - **Cause**: Backend CORS not configured for frontend URL
+   - **Fix**: 
+     1. Get your frontend URL: `https://code-xplain.up.railway.app`
+     2. Go to **Backend Service** → **Variables** tab
+     3. Update `CORS_ORIGINS` to: `["https://code-xplain.up.railway.app"]`
+     4. Railway will redeploy automatically
+
+   **Issue: "Network Error" or API calls failing**
+   - **Cause**: `VITE_API_BASE_URL` not set or incorrect
+   - **Fix**:
+     1. Go to **Frontend Service** → **Variables** tab
+     2. Check if `VITE_API_BASE_URL` exists
+     3. If missing or wrong, add/update it to your backend URL: `https://your-backend-name.railway.app`
+     4. **Important**: Railway will rebuild the frontend automatically
+     5. Wait for rebuild to complete (can take a few minutes)
+
+   **Issue: Frontend loads but shows "localhost:8000" in network requests**
+   - **Cause**: `VITE_API_BASE_URL` was not set during build
+   - **Fix**: 
+     1. Add `VITE_API_BASE_URL` variable in frontend service
+     2. Trigger a new deployment (Railway will rebuild)
+     3. Vite variables are embedded at BUILD time, not runtime
+
+   **Issue: 502 Bad Gateway**
+   - **Cause**: Frontend service not running or nginx misconfigured
+   - **Fix**:
+     1. Check frontend service logs in Railway
+     2. Verify nginx is starting correctly
+     3. Check if port configuration is correct
+
+3. **Verify configuration:**
+   - [ ] Frontend service has `VITE_API_BASE_URL` set to backend URL
+   - [ ] Backend service has `CORS_ORIGINS` set to frontend URL
+   - [ ] Both services show as "Active" in Railway
+   - [ ] Both services have public URLs
 
 ### Build fails
 
