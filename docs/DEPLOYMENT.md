@@ -18,20 +18,29 @@ Since you're already using Railway for your app, this is the easiest option.
 1. Click on the new service
 2. Go to **"Settings"** tab
 3. Set **Root Directory** to: `docs`
-4. Configure **Build Command**: `npm ci && npm run build`
-5. Configure **Start Command**: `npx serve -s build -l tcp://0.0.0.0:${PORT:-3000}`
-6. **Output Directory**: `build` (Docusaurus outputs to `build/`)
+4. **Build Command**: Leave empty (Dockerfile handles the build)
+5. **Start Command**: Leave empty (Dockerfile CMD handles it)
+6. **Output Directory**: Not needed (Dockerfile handles it)
+
+**Important**: Railway will automatically pass environment variables as build arguments to Docker, so the Dockerfile will use them during the build.
 
 ### Step 3: Add Environment Variables
 
-Add these (optional) variables so the docs site can adjust URL/baseUrl automatically:
+**⚠️ CRITICAL: These must be set BEFORE the build!**
+
+Go to **"Variables"** tab and add:
 
 ```
-DOCS_SITE_URL=https://code-xplain-docs.up.railway.app
+DOCS_SITE_URL=https://code-explain-production.up.railway.app
 DOCS_BASE_URL=/
 ```
 
-If you leave them unset, the docs will default to the GitHub Pages configuration (`https://nanaagyei.github.io/code-explain/`).
+**Important Notes:**
+- `DOCS_SITE_URL` should match your Railway service URL (without trailing slash)
+- `DOCS_BASE_URL` should be `/` for Railway (root path)
+- Railway will automatically pass these as build arguments to Docker
+- The Dockerfile uses these during the build step to configure Docusaurus correctly
+- If you leave them unset, the docs will default to GitHub Pages configuration (`/code-explain/`)
 
 ### Step 4: Configure Port
 
