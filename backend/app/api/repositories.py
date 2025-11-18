@@ -172,11 +172,19 @@ async def create_repository_from_github(
             repo_name, files = process_github_repository(github_url, max_files)
             print(f"   ✓ Extracted {len(files)} files from {repo_name}")
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            error_msg = str(e)
+            print(f"   Validation error: {error_msg}")
+            raise HTTPException(status_code=400, detail=error_msg)
+        except FileNotFoundError as e:
+            error_msg = "Git is not installed. Please ensure git is available in the container."
+            print(f"   Git not found: {error_msg}")
+            raise HTTPException(status_code=500, detail=error_msg)
         except Exception as e:
+            error_msg = f"Failed to clone repository: {str(e)}"
+            print(f"   Clone error: {error_msg}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to clone repository: {str(e)}"
+                detail=error_msg
             )
         
         # Create repository record
