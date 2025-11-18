@@ -38,11 +38,11 @@ const config: Config = {
           // Please change this to your repo.
           editUrl: 'https://github.com/nanaagyei/code-explain/tree/main/docs/',
         },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          editUrl: 'https://github.com/nanaagyei/code-explain/tree/main/docs/',
-        },
+        blog: false, // Blog disabled - remove this line and uncomment below to enable
+        // blog: {
+        //   showReadingTime: true,
+        //   editUrl: 'https://github.com/nanaagyei/code-explain/tree/main/docs/',
+        // },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -81,11 +81,15 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/getting-started',
+              to: '/docs/getting-started/introduction',
             },
             {
               label: 'Features',
-              to: '/docs/features',
+              to: '/docs/features/ai-documentation',
+            },
+            {
+              label: 'API Reference',
+              to: '/docs/api/backend-api',
             },
           ],
         },
@@ -106,8 +110,12 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: 'Development',
+              to: '/docs/development/architecture',
+            },
+            {
+              label: 'Troubleshooting',
+              to: '/docs/troubleshooting/common-issues',
             },
           ],
         },
