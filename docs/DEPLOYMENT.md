@@ -24,7 +24,14 @@ Since you're already using Railway for your app, this is the easiest option.
 
 ### Step 3: Add Environment Variables
 
-No environment variables needed for static site deployment.
+Add these (optional) variables so the docs site can adjust URL/baseUrl automatically:
+
+```
+DOCS_SITE_URL=https://code-xplain-docs.up.railway.app
+DOCS_BASE_URL=/
+```
+
+If you leave them unset, the docs will default to the GitHub Pages configuration (`https://nanaagyei.github.io/code-explain/`).
 
 ### Step 4: Configure Port
 

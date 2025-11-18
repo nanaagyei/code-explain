@@ -142,13 +142,13 @@ from app.core.database import engine
 from sqlalchemy import text
 
 async def test_connection():
-    try:
+try:
         async with engine.begin() as conn:
             result = await conn.execute(text('SELECT 1'))
-            print('✅ Database connection successful!')
+        print('✅ Database connection successful!')
         return True
-    except Exception as e:
-        print(f'❌ Database connection failed: {e}')
+except Exception as e:
+    print(f'❌ Database connection failed: {e}')
         return False
     finally:
         await engine.dispose()

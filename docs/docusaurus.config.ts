@@ -2,6 +2,9 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const siteUrl = process.env.DOCS_SITE_URL ?? 'https://nanaagyei.github.io';
+const baseUrl = process.env.DOCS_BASE_URL ?? '/code-explain/';
+
 const config: Config = {
   title: 'CodeExplain',
   tagline: 'AI-Powered Code Documentation & Analysis Platform',
@@ -10,9 +13,9 @@ const config: Config = {
   // Set the production url of your site here
   // For GitHub Pages: use 'https://nanaagyei.github.io' and baseUrl: '/code-explain/'
   // For Railway/Vercel/Netlify: use your custom domain and baseUrl: '/'
-  url: 'https://nanaagyei.github.io',
+  url: siteUrl,
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/code-explain/',
+  baseUrl: baseUrl,
 
   // GitHub pages deployment config.
   organizationName: 'nanaagyei', // GitHub org/user name
