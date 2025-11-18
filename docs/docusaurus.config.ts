@@ -8,9 +8,11 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://codeexplain.dev',
+  // For GitHub Pages: use 'https://nanaagyei.github.io' and baseUrl: '/code-explain/'
+  // For Railway/Vercel/Netlify: use your custom domain and baseUrl: '/'
+  url: 'https://nanaagyei.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/',
+  baseUrl: '/code-explain/',
 
   // GitHub pages deployment config.
   organizationName: 'nanaagyei', // GitHub org/user name
