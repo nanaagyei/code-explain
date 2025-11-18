@@ -19,7 +19,7 @@ Since you're already using Railway for your app, this is the easiest option.
 2. Go to **"Settings"** tab
 3. Set **Root Directory** to: `docs`
 4. Configure **Build Command**: `npm ci && npm run build`
-5. Configure **Start Command**: `npx serve -s build -l ${PORT:-3000}`
+5. Configure **Start Command**: `npx serve -s build -l tcp://0.0.0.0:${PORT:-3000}`
 6. **Output Directory**: `build` (Docusaurus outputs to `build/`)
 
 ### Step 3: Add Environment Variables
@@ -79,7 +79,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
       
