@@ -96,7 +96,15 @@ Skip to Step 2!
 
 ### 5.3: Add Environment Variables
 
-Go to **"Variables"** tab and add:
+**⚠️ CRITICAL: You MUST set these environment variables or the backend will fail to start!**
+
+1. Go to your **Backend service** in Railway
+2. Click on **"Variables"** tab (or **"Environment"** tab)
+3. Click **"+ New Variable"** for each variable below
+
+**Option A: Set Variables Per Service (Recommended for first-time setup)**
+
+Add these variables one by one:
 
 ```env
 # Application
@@ -107,7 +115,8 @@ DEBUG=False
 # Database (use Railway's PostgreSQL connection string)
 # Format: postgresql://postgres:PASSWORD@HOST:PORT/railway
 # Get this from your PostgreSQL service → "Connect" tab
-DATABASE_URL=postgresql+asyncpg://postgres:PASSWORD@HOST:PORT/railway
+DATABASE_URL=postgresql://postgres:PASSWORD@HOST:PORT/railway
+# Note: The code will automatically convert postgresql:// to postgresql+asyncpg://
 
 # Redis (use Railway's Redis connection string)
 # Format: redis://default:PASSWORD@HOST:PORT
@@ -137,11 +146,18 @@ RATE_LIMIT_PER_MINUTE=60
 MAX_FILE_SIZE_MB=25
 ```
 
+**Option B: Use Railway's Shared Variables (Advanced)**
+
+1. Go to your **Project** (not the service)
+2. Click **"Variables"** tab
+3. Add variables here to share across all services
+4. Service-specific variables will override shared ones
+
 **To get database connection strings:**
 1. Click on your **PostgreSQL** service
 2. Go to **"Connect"** tab
 3. Copy the **"Postgres Connection URL"**
-4. Replace `postgresql://` with `postgresql+asyncpg://` for async support
+4. **Important**: You can use it as-is (`postgresql://...`) - the code will automatically convert it to `postgresql+asyncpg://`
 
 **To get Redis connection string:**
 1. Click on your **Redis** service
@@ -154,6 +170,13 @@ MAX_FILE_SIZE_MB=25
 openssl rand -hex 32  # For SECRET_KEY
 openssl rand -hex 32  # For JWT_SECRET
 ```
+
+**⚠️ IMPORTANT NOTES:**
+- **DATABASE_URL is REQUIRED** - Without it, the backend will crash on startup
+- Railway provides `postgresql://` URLs - the code handles the conversion automatically
+- After adding variables, Railway will automatically redeploy the service
+- If you see errors about missing environment variables, double-check the Variables tab
+- Variable names are case-sensitive: `DATABASE_URL` not `database_url`
 
 ### 5.4: Verify Build Settings
 
