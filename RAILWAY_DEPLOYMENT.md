@@ -246,25 +246,39 @@ Railway works best with the existing Dockerfile. Make sure `frontend/Dockerfile`
 
 Vite replaces environment variables at BUILD time, not runtime. You MUST set this variable before Railway builds the frontend.
 
+**⚠️ IMPORTANT: Use Public Domain, NOT Private Network!**
+
+Since your frontend runs in the browser (client-side), it cannot access Railway's private network (`*.railway.internal`). You MUST use the backend's public domain.
+
 1. Go to your **Frontend service** in Railway
 2. Click on **"Variables"** tab
 3. Click **"+ New Variable"**
-4. Add this variable:
+4. Add this variable using Railway's reference variable:
 
 ```env
-# API Base URL - Use your backend Railway URL
-# Get this from backend service → "Settings" → "Networking"
+# API Base URL - Use Railway's reference variable for backend public domain
+# This automatically updates when backend redeploys
+VITE_API_BASE_URL=https://${{Backend.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+**Alternative (Manual):** If you prefer to set it manually:
+
+```env
+# Get this from backend service → "Settings" → "Networking" → Copy public URL
 VITE_API_BASE_URL=https://your-backend-name.railway.app
 ```
 
 **Important Notes:**
-- **Set this BEFORE the first build** - If you've already built, you need to:
-  1. Add the variable
-  2. Trigger a new deployment (Railway will rebuild automatically)
-- Get the backend URL from: **Backend Service** → **"Settings"** → **"Networking"** → Copy the public URL
-- Use `https://` (not `http://`)
-- No trailing slash
-- Example: `VITE_API_BASE_URL=https://code-xplain-backend.up.railway.app`
+- **Use `https://` NOT `http://`** - Railway provides HTTPS
+- **Use `RAILWAY_PUBLIC_DOMAIN` NOT `RAILWAY_PRIVATE_DOMAIN`** - Browser can't access private network
+- **No trailing slash**
+- **Set this BEFORE building** - If you've already built, Railway will rebuild automatically when you add/update the variable
+
+**Why not private network?**
+- Frontend runs in the browser (client-side)
+- Browser is on the public internet, outside Railway's private network
+- Private network (`*.railway.internal`) only works for server-to-server communication
+- See: https://docs.railway.com/guides/private-networking#faq
 
 **After setting the variable:**
 - Railway will automatically trigger a new build
@@ -286,11 +300,22 @@ VITE_API_BASE_URL=https://your-backend-name.railway.app
 
 ### 6.6: Configure Frontend Port
 
+**⚠️ IMPORTANT: Let Railway auto-detect the port!**
+
 1. Go to **"Settings"** → **"Networking"**
-2. Railway will show port configuration:
-   - **Option A**: Let Railway auto-detect (usually port 80 for Nginx)
-   - **Option B**: Manually set port (if needed, but usually not required for Nginx)
-3. Railway will generate a public URL like: `https://your-frontend-name.railway.app`
+2. **CRITICAL**: Do NOT manually set a port - let Railway auto-detect
+3. Railway will:
+   - Read the `EXPOSE 80` directive from your Dockerfile
+   - Automatically assign a port (usually 8080 or similar)
+   - Set the `$PORT` environment variable
+   - Your startup script will use this `$PORT` value
+4. Railway will generate a public URL like: `https://your-frontend-name.railway.app`
+
+**If you manually set a port:**
+- Railway's load balancer will try to connect to your manually set port
+- But nginx will be listening on the `$PORT` value Railway provides
+- This causes "connection refused" errors (502 Bad Gateway)
+- **Solution**: Remove the manual port setting and let Railway auto-detect
 
 ## Step 7: Update CORS After Deployment
 
@@ -303,12 +328,19 @@ Once both services are deployed:
 2. **Update CORS in backend:**
    - Go to **Backend Service** → **"Variables"** tab
    - Find `CORS_ORIGINS` variable
-   - Update it with your frontend URL:
+   - Update it with your frontend URL using Railway's reference variable:
+     ```env
+     CORS_ORIGINS=["https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}"]
+     ```
+   - **Or manually:**
      ```env
      CORS_ORIGINS=["https://your-frontend-name.railway.app"]
      ```
-   - **Important**: Use the exact URL from Railway (with `https://` and no trailing slash)
-   - The format should be a JSON array: `["https://url1.com","https://url2.com"]`
+   - **Important**: 
+     - Use `https://` (not `http://`)
+     - Use `RAILWAY_PUBLIC_DOMAIN` (not private domain - browser can't access private network)
+     - No trailing slash
+     - Format: JSON array: `["https://url1.com","https://url2.com"]`
 
 3. **Save changes** - Railway will automatically redeploy the backend
 
@@ -485,11 +517,32 @@ Railway auto-deploys by default, but you can configure:
      5. Wait for rebuild to complete (can take a few minutes)
 
    **Issue: Frontend loads but shows "localhost:8000" in network requests**
-   - **Cause**: `VITE_API_BASE_URL` was not set during build
+   - **Cause**: Build is using cached layers, so the new `VITE_API_BASE_URL` wasn't used
    - **Fix**: 
-     1. Add `VITE_API_BASE_URL` variable in frontend service
-     2. Trigger a new deployment (Railway will rebuild)
-     3. Vite variables are embedded at BUILD time, not runtime
+     1. **Verify variable is set:**
+        - Go to Frontend service → Variables tab
+        - Check `VITE_API_BASE_URL` exists and has correct value: `https://melodious-empathy-production-6b50.up.railway.app`
+        - **Do NOT use reference variables** (`${{Backend.RAILWAY_PUBLIC_DOMAIN}}`) - they don't work with Vite builds
+     2. **Force a rebuild (bust the cache):**
+        - **Option A (Recommended)**: Make a small change to trigger a fresh build
+          - Edit any file in `frontend/` (like add a comment to `package.json`)
+          - Commit and push to trigger a new build
+        - **Option B**: Use Railway's "Clear Build Cache" option (if available)
+          - Go to Deployments tab → Settings → Clear Build Cache
+        - **Option C**: Temporarily change Dockerfile to force rebuild
+          - Add a comment or whitespace to the Dockerfile
+          - Commit and push
+     3. **Verify the build used the variable:**
+        - Check build logs - you should see: `Building with VITE_API_BASE_URL=https://...`
+        - If you see `Building with VITE_API_BASE_URL=` (empty), the variable isn't being passed
+     4. **After deployment:**
+        - Open browser DevTools → Network tab
+        - Try to register/login
+        - Check request URL - should be `https://melodious-empathy-production-6b50.up.railway.app/...`, not `localhost:8000`
+     5. **Important**: 
+        - Vite variables are embedded at BUILD time, not runtime
+        - If build logs show "cached", the build didn't actually run - you need to bust the cache
+        - Railway's Docker layer caching can prevent rebuilds even when variables change
 
    **Issue: 502 Bad Gateway**
    - **Cause**: Frontend service not running or nginx misconfigured
