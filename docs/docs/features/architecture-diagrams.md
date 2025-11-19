@@ -6,11 +6,11 @@ CodeExplain's Architecture Diagrams feature creates interactive, visual represen
 
 The Architecture Diagrams feature provides:
 
-- 🏗️ **Interactive Visualizations** - Zoom, pan, and explore your code structure
-- 🔗 **Relationship Mapping** - See how components connect and depend on each other
-- 📊 **Multiple Layouts** - Horizontal, vertical, and circular arrangements
-- 🎨 **Custom Node Types** - Different visual styles for functions, classes, modules, and APIs
-- 📤 **Export Options** - Save diagrams as PNG, SVG, or interactive formats
+- **Interactive Visualizations**: Zoom, pan, and explore your code structure
+- **Relationship Mapping**: See how components connect and depend on each other
+- **Multiple Layouts**: Horizontal, vertical, and circular arrangements
+- **Custom Node Types**: Different visual styles for functions, classes, modules, and APIs
+- **Export Options**: Save diagrams as PNG, SVG, or interactive formats
 
 ## How It Works
 
@@ -50,10 +50,10 @@ The system automatically identifies:
 The interactive diagram displays your code structure with:
 
 #### Node Types
-- 🔵 **Functions** - Individual functions and methods
-- 🟣 **Classes** - Class definitions and objects
-- 🟢 **Modules** - File imports and exports
-- 🟠 **APIs** - HTTP endpoints and services
+- **Functions**: Individual functions and methods
+- **Classes**: Class definitions and objects
+- **Modules**: File imports and exports
+- **APIs**: HTTP endpoints and services
 
 #### Edge Types
 - **Solid Lines** - Direct function calls
@@ -400,4 +400,4 @@ codeexplain export-diagrams --format svg --output ./docs/architecture/
 
 ---
 
-The Architecture Diagrams feature helps you visualize and understand complex code structures, making it easier to maintain, refactor, and onboard new team members. Use it regularly to keep your mental model of the codebase up to date! 🚀
+The Architecture Diagrams feature helps you visualize and understand complex code structures, making it easier to maintain, refactor, and onboard new team members. Use it regularly to keep your mental model of the codebase up to date.

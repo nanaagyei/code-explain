@@ -126,11 +126,11 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ |
-| `REDIS_URL` | Redis connection string | ✅ |
-| `SECRET_KEY` | Application secret key | ✅ |
-| `JWT_SECRET` | JWT signing secret | ✅ |
-| `OPENAI_API_KEY` | OpenAI API key for AI features | ✅ |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `REDIS_URL` | Redis connection string | Yes |
+| `SECRET_KEY` | Application secret key | Yes |
+| `JWT_SECRET` | JWT signing secret | Yes |
+| `OPENAI_API_KEY` | OpenAI API key for AI features | Yes |
 
 ### Optional Environment Variables
 
@@ -277,4 +277,4 @@ Once installation is complete:
 
 ---
 
-**Installation complete!** 🎉 You're ready to start using CodeExplain. Let's move on to the [Quick Start Guide](./quick-start.md) to create your first documentation.
+**Installation complete!** You're ready to start using CodeExplain. Let's move on to the [Quick Start Guide](./quick-start.md) to create your first documentation.

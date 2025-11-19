@@ -1,8 +1,8 @@
-# 🚀 CodeExplain Deployment Guide
+# CodeExplain Deployment Guide
 
 Complete step-by-step guide to deploy CodeExplain backend, frontend, database, and documentation.
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### **System Requirements**
 - **OS**: Windows 10+, macOS 10.15+, or Linux (Ubuntu 18.04+)
@@ -20,7 +20,7 @@ Complete step-by-step guide to deploy CodeExplain backend, frontend, database, a
 - **OpenAI API Key** - [Get API Key](https://platform.openai.com/api-keys)
 - **GitHub Account** (optional) - For repository integration
 
-## 🏗️ Deployment Architecture
+## Deployment Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -38,7 +38,7 @@ Complete step-by-step guide to deploy CodeExplain backend, frontend, database, a
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Step-by-Step Deployment
+## Step-by-Step Deployment
 
 ### **Step 1: Clone and Setup Repository**
 
@@ -132,7 +132,7 @@ from app.core.database import engine
 from sqlalchemy import text
 with engine.connect() as conn:
     result = conn.execute(text('SELECT 1'))
-    print('✅ Database connection successful!')
+    print('Database connection successful!')
 "
 
 # Start backend server
@@ -208,7 +208,7 @@ curl http://localhost:8000/health
 - Open browser: http://localhost:3001
 - Should see comprehensive documentation site
 
-## 🔧 Production Deployment
+## Production Deployment
 
 ### **Option 1: Docker Compose (Recommended)**
 
@@ -264,7 +264,7 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
-## ☁️ Cloud Deployment
+## Cloud Deployment
 
 ### **AWS Deployment**
 
@@ -334,7 +334,7 @@ az container create \
   --ports 3000
 ```
 
-## 🔍 Monitoring & Logging
+## Monitoring & Logging
 
 ### **Application Monitoring**
 ```bash
@@ -377,7 +377,7 @@ docker stats
 docker-compose exec postgres psql -U codeexplain -d codeexplain -c "SELECT * FROM pg_stat_activity;"
 ```
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### **Common Issues**
 
@@ -466,7 +466,7 @@ vm_stat  # macOS
 docker-compose restart
 ```
 
-## 🔒 Security Checklist
+## Security Checklist
 
 ### **Production Security**
 - [ ] Change default passwords
@@ -490,7 +490,7 @@ chmod 600 .env.prod
 # AWS Secrets Manager, Azure Key Vault, or Google Secret Manager
 ```
 
-## 📊 Scaling Considerations
+## Scaling Considerations
 
 ### **Horizontal Scaling**
 - **Load Balancer**: Nginx or AWS ALB
@@ -504,7 +504,7 @@ chmod 600 .env.prod
 - **Caching Strategy**: Redis caching layers
 - **CDN**: For static assets
 
-## 🎯 Next Steps
+## Next Steps
 
 After successful deployment:
 
@@ -516,6 +516,6 @@ After successful deployment:
 
 ---
 
-**🎉 Congratulations!** You've successfully deployed CodeExplain. Your AI-powered code documentation platform is now ready to revolutionize how you document and analyze code!
+**Congratulations!** You've successfully deployed CodeExplain. Your AI-powered code documentation platform is now ready to revolutionize how you document and analyze code!
 
 For additional help, check our [Documentation](/docs/getting-started/introduction) or [GitHub Issues](https://github.com/nanaagyei/code-explain/issues).

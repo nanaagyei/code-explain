@@ -245,8 +245,8 @@ const commentResult = await codeExplain.github.postPRComment({
 3. Add error handling for API calls
 
 ### Documentation:
-- ✅ Generated documentation for AuthService
-- ✅ Updated README with new features
+- Generated documentation for AuthService
+- Updated README with new features
   `,
   options: {
     markdown: true,

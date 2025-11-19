@@ -6,30 +6,30 @@ Welcome to **CodeExplain** - the AI-powered code documentation and analysis plat
 
 CodeExplain is a comprehensive platform that combines the power of artificial intelligence with modern web technologies to provide:
 
-- 🤖 **AI-Powered Documentation** - Automatically generate comprehensive documentation for your code
-- 🔍 **Smart Code Analysis** - Get detailed code reviews, quality metrics, and security insights
-- 📊 **Interactive Architecture Diagrams** - Visualize your code structure and relationships
-- 🎓 **AI Coding Mentor** - Personalized learning paths and skill assessments
-- ⚡ **Bulk Operations** - Process multiple repositories simultaneously
-- 🔗 **GitHub Integration** - Seamlessly import and analyze GitHub repositories
+- **AI-Powered Documentation**: Automatically generate comprehensive documentation for your code
+- **Smart Code Analysis**: Get detailed code reviews, quality metrics, and security insights
+- **Interactive Architecture Diagrams**: Visualize your code structure and relationships
+- **AI Coding Mentor**: Personalized learning paths and skill assessments
+- **Bulk Operations**: Process multiple repositories simultaneously
+- **GitHub Integration**: Seamlessly import and analyze GitHub repositories
 
 ## Key Features
 
-### 🚀 Core Capabilities
+### Core Capabilities
 
 - **Multi-Language Support**: Python, JavaScript, TypeScript, Java, C++, Go, Rust, and more
 - **Real-time Processing**: Fast, on-demand analysis with intelligent caching
 - **Modern UI/UX**: Beautiful, responsive interface built with React and Tailwind CSS
 - **Secure & Scalable**: Enterprise-grade security with JWT authentication and encrypted storage
 
-### 🧠 AI-Powered Analysis
+### AI-Powered Analysis
 
 - **Code Review**: Automated security vulnerability detection and performance optimization suggestions
 - **Quality Metrics**: 5-dimensional scoring system (Maintainability, Testability, Readability, Performance, Security)
 - **Architecture Visualization**: Interactive diagrams showing component relationships and data flow
 - **Mentor Insights**: Personalized skill assessment and learning recommendations
 
-### 🔧 Developer Experience
+### Developer Experience
 
 - **Custom AI Prompts**: Tailor documentation style to your team's preferences
 - **API Key Management**: Use your own OpenAI API keys for enhanced control

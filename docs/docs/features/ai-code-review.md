@@ -6,10 +6,10 @@ CodeExplain's AI Code Review feature provides comprehensive analysis of your cod
 
 The AI Code Review feature uses advanced machine learning models to analyze your code and provide:
 
-- 🔒 **Security Analysis** - Detect vulnerabilities and security risks
-- ⚡ **Performance Optimization** - Identify bottlenecks and inefficiencies  
-- 📋 **Best Practices** - Suggest code improvements and standards
-- 📊 **Overall Scoring** - Quantified assessment of code quality
+- **Security Analysis**: Detect vulnerabilities and security risks
+- **Performance Optimization**: Identify bottlenecks and inefficiencies  
+- **Best Practices**: Suggest code improvements and standards
+- **Overall Scoring**: Quantified assessment of code quality
 
 ## How It Works
 
@@ -66,11 +66,11 @@ The review results are displayed in organized sections:
 
 #### Security Issues Panel
 ```markdown
-🔴 Critical Issues (2)
+Critical Issues (2)
 - SQL Injection vulnerability in line 45
 - Hardcoded API key in line 12
 
-🟡 Medium Issues (3)  
+Medium Issues (3)  
 - Missing input validation in line 78
 - Weak password hashing in line 156
 - CORS misconfiguration in line 203
@@ -78,21 +78,21 @@ The review results are displayed in organized sections:
 
 #### Performance Issues Panel
 ```markdown
-⚡ High Impact (1)
+High Impact (1)
 - O(n²) algorithm in line 89 - consider optimization
 
-🟡 Medium Impact (2)
+Medium Impact (2)
 - Unnecessary database queries in loop
 - Large object creation in tight loop
 ```
 
 #### Best Practices Panel
 ```markdown
-✅ Good Practices
+Good Practices
 - Consistent naming conventions
 - Good error handling structure
 
-🔧 Improvements Needed
+Improvements Needed
 - Add type hints for better readability
 - Consider using dependency injection
 - Add comprehensive unit tests
@@ -107,10 +107,10 @@ The review results are displayed in organized sections:
 - **0-49**: Needs significant refactoring
 
 #### Severity Levels
-- **🔴 Critical**: Immediate security or stability risk
-- **🟡 High**: Important issues that should be addressed
-- **🟠 Medium**: Improvements that enhance code quality
-- **🟢 Low**: Minor suggestions for optimization
+- **Critical**: Immediate security or stability risk
+- **High**: Important issues that should be addressed
+- **Medium**: Improvements that enhance code quality
+- **Low**: Minor suggestions for optimization
 
 ## Advanced Features
 
@@ -171,7 +171,7 @@ def authenticate_user(username, password):
 
 #### Security Issues
 ```markdown
-🔴 CRITICAL: SQL Injection Vulnerability
+CRITICAL: SQL Injection Vulnerability
 - Line 2: Direct string interpolation in SQL query
 - Risk: Complete database compromise possible
 - Fix: Use parameterized queries
@@ -179,7 +179,7 @@ def authenticate_user(username, password):
 
 #### Performance Issues
 ```markdown
-🟡 MEDIUM: Inefficient Password Handling
+MEDIUM: Inefficient Password Handling
 - Line 2: Storing plaintext passwords
 - Risk: Data breach exposure
 - Fix: Use bcrypt or similar hashing
@@ -187,7 +187,7 @@ def authenticate_user(username, password):
 
 #### Best Practices
 ```markdown
-🔧 IMPROVEMENT: Add Input Validation
+IMPROVEMENT: Add Input Validation
 - Add username/password length validation
 - Implement rate limiting for login attempts
 - Add proper error handling
@@ -210,14 +210,14 @@ function processUserData(userData) {
 
 #### Performance Issues
 ```markdown
-⚡ HIGH: Inefficient Object Construction
+HIGH: Inefficient Object Construction
 - Line 3-5: O(n) loop with object property assignment
 - Suggestion: Use Object.fromEntries() or Map
 ```
 
 #### Best Practices
 ```markdown
-🔧 IMPROVEMENT: Add Type Safety
+IMPROVEMENT: Add Type Safety
 - Add TypeScript interfaces
 - Implement input validation
 - Add error handling for malformed data
@@ -334,4 +334,4 @@ interface PerformanceIssue {
 
 ---
 
-The AI Code Review feature helps you maintain high code quality, identify security risks early, and continuously improve your development practices. Use it regularly to build better, more secure, and more maintainable code! 🚀
+The AI Code Review feature helps you maintain high code quality, identify security risks early, and continuously improve your development practices. Use it regularly to build better, more secure, and more maintainable code.

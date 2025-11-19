@@ -6,11 +6,11 @@ CodeExplain's Quality Metrics feature provides a comprehensive 5-dimensional sco
 
 The Quality Metrics feature analyzes your code and provides scores for:
 
-- 🏗️ **Maintainability** - How easy it is to modify and extend
-- 🧪 **Testability** - How well the code can be tested
-- 📖 **Readability** - How clear and understandable the code is
-- ⚡ **Performance** - How efficiently the code runs
-- 🔒 **Security** - How secure the code is against vulnerabilities
+- **Maintainability**: How easy it is to modify and extend
+- **Testability**: How well the code can be tested
+- **Readability**: How clear and understandable the code is
+- **Performance**: How efficiently the code runs
+- **Security**: How secure the code is against vulnerabilities
 
 ## The 5 Quality Dimensions
 
@@ -143,32 +143,32 @@ The Quality Metrics feature analyzes your code and provides scores for:
 The metrics are displayed as circular progress indicators:
 
 ```markdown
-📊 Quality Metrics Dashboard
+Quality Metrics Dashboard
 
-🏗️ Maintainability: 75/100
-   ✅ Good modular structure
-   ⚠️ Some functions are too long
-   💡 Consider breaking down large functions
+Maintainability: 75/100
+   - Good modular structure
+   - Some functions are too long
+   - Consider breaking down large functions
 
-🧪 Testability: 60/100
-   ✅ Clear business logic separation
-   ⚠️ Tight coupling with external services
-   💡 Use dependency injection patterns
+Testability: 60/100
+   - Clear business logic separation
+   - Tight coupling with external services
+   - Use dependency injection patterns
 
-📖 Readability: 85/100
-   ✅ Excellent naming conventions
-   ✅ Good code organization
-   💡 Add more inline documentation
+Readability: 85/100
+   - Excellent naming conventions
+   - Good code organization
+   - Add more inline documentation
 
-⚡ Performance: 70/100
-   ✅ Efficient algorithms used
-   ⚠️ Some unnecessary object creation
-   💡 Consider object pooling for frequent operations
+Performance: 70/100
+   - Efficient algorithms used
+   - Some unnecessary object creation
+   - Consider object pooling for frequent operations
 
-🔒 Security: 80/100
-   ✅ Proper input validation
-   ✅ Secure authentication
-   💡 Add rate limiting for API endpoints
+Security: 80/100
+   - Proper input validation
+   - Secure authentication
+   - Add rate limiting for API endpoints
 
 Overall Score: 74/100
 ```
@@ -209,9 +209,9 @@ Documentation: 70/100
 
 ### Color Coding
 
-- 🟢 **Green (80-100)**: Excellent quality
-- 🟡 **Yellow (60-79)**: Good quality with room for improvement
-- 🔴 **Red (0-59)**: Needs significant improvement
+- **Green (80-100)**: Excellent quality
+- **Yellow (60-79)**: Good quality with room for improvement
+- **Red (0-59)**: Needs significant improvement
 
 ## Advanced Features
 
@@ -236,7 +236,7 @@ interface QualityTrend {
 Compare quality metrics across team members:
 
 ```markdown
-👥 Team Quality Dashboard
+Team Quality Dashboard
 
 John Doe: 82/100
 - Maintainability: 85
@@ -421,7 +421,7 @@ function calculateTotalPrice(basePrice, taxRate, discount) {
 Establish quality targets for your team:
 
 ```markdown
-🎯 Quality Goals
+Quality Goals
 
 Minimum Scores:
 - Maintainability: 80+
@@ -485,4 +485,4 @@ Target Scores:
 
 ---
 
-The Quality Metrics feature provides objective, actionable insights to help you continuously improve your code quality. Use it regularly to maintain high standards and build better software! 🚀
+The Quality Metrics feature provides objective, actionable insights to help you continuously improve your code quality. Use it regularly to maintain high standards and build better software.

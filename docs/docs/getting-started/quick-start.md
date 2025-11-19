@@ -71,10 +71,10 @@ CodeExplain supports a wide range of programming languages:
 
 1. Click on any file in your repository
 2. You'll see the **File Documentation** page with tabs:
-   - **📄 Documentation**: AI-generated documentation
-   - **🔍 Code Review**: Security and performance analysis
-   - **📊 Quality Score**: 5-dimensional quality metrics
-   - **🏗️ Architecture**: Interactive code structure diagram
+   - **Documentation**: AI-generated documentation
+   - **Code Review**: Security and performance analysis
+   - **Quality Score**: 5-dimensional quality metrics
+   - **Architecture**: Interactive code structure diagram
 
 ## Step 6: Explore AI Features
 
@@ -250,4 +250,4 @@ Now that you've created your first documentation:
 
 ---
 
-**Congratulations!** 🎉 You've successfully created your first AI-powered code documentation with CodeExplain. The platform is now ready to help you document, analyze, and improve your code with the power of artificial intelligence.
+**Congratulations!** You've successfully created your first AI-powered code documentation with CodeExplain. The platform is now ready to help you document, analyze, and improve your code with the power of artificial intelligence.

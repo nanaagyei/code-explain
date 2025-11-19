@@ -70,32 +70,33 @@ const MentorDashboard: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 sm:h-16 gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={() => navigate(-1)}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition duration-200"
               >
-                <ArrowLeftIcon className="w-5 h-5" />
-                <span className="text-sm font-medium">Back</span>
+                <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-sm font-medium">Back</span>
               </button>
-              <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold text-gray-900">AI Coding Mentor</h1>
-                <span className="text-sm text-gray-500">Personalized learning paths</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AI Coding Mentor</h1>
+                <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">Personalized learning paths</span>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Select a file to analyze your coding skills
+              <div className="text-xs sm:text-sm text-gray-600">
+                <span className="hidden sm:inline">Select a file to analyze your coding skills</span>
+                <span className="sm:hidden">Select a file</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Panel - File Selection */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">

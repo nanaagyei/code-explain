@@ -167,16 +167,16 @@ export default function BentoChat() {
 
       {/* Chat Window - Bento Style */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[600px] max-h-[calc(100vh-2rem)] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-neutral-200/50 flex flex-col z-50 animate-slide-up">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[500px] sm:h-[600px] max-h-[calc(100vh-2rem)] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-neutral-200/50 flex flex-col z-50 animate-slide-up">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-200/50 bg-blue-50/50 rounded-t-3xl">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <CpuChipIcon className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between p-3 sm:p-5 border-b border-gray-200/50 bg-blue-50/50 rounded-t-3xl">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <CpuChipIcon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900">CodeExplain AI</h3>
-                <p className="text-xs text-gray-600">Ask me anything about code!</p>
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base truncate">CodeExplain AI</h3>
+                <p className="text-xs text-gray-600 hidden sm:block">Ask me anything about code!</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -295,7 +295,7 @@ export default function BentoChat() {
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-neutral-200/50 bg-white/50 rounded-b-3xl">
+          <div className="p-3 sm:p-4 border-t border-neutral-200/50 bg-white/50 rounded-b-3xl">
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -304,19 +304,19 @@ export default function BentoChat() {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none text-sm disabled:opacity-50"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-neutral-100 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-200 outline-none text-xs sm:text-sm disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg hover:shadow-xl"
+                className="px-3 sm:px-5 py-2 sm:py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
             </div>
-            <p className="text-xs text-neutral-500 mt-2 text-center">
+            <p className="text-xs text-neutral-500 mt-2 text-center hidden sm:block">
               Press Enter to send • AI responses may vary
             </p>
           </div>

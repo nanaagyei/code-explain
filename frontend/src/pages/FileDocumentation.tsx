@@ -124,30 +124,31 @@ export default function FileDocumentation() {
             </div>
 
             {/* Badges & Actions */}
-            <div className="flex items-center space-x-3 flex-wrap gap-2">
-              <div className="flex items-center space-x-2">
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1.5 text-xs font-bold text-blue-700 border border-blue-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2 w-full sm:w-auto">
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-blue-700 border border-blue-200 whitespace-nowrap">
                   {doc.language}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1.5 text-xs font-bold text-purple-700 border border-purple-200">
+                <span className="inline-flex items-center rounded-full bg-purple-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-purple-700 border border-purple-200 whitespace-nowrap">
                   Complexity: {doc.complexity}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold text-green-700 border border-green-200">
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-green-700 border border-green-200 whitespace-nowrap">
                   {doc.stats.total_lines} lines
                 </span>
               </div>
 
               {/* Export Buttons */}
-              <div className="flex items-center space-x-2 border-l border-neutral-200 pl-3">
+              <div className="flex items-center space-x-2 border-t sm:border-t-0 sm:border-l border-neutral-200 pt-3 sm:pt-0 sm:pl-3 w-full sm:w-auto">
                 <button
                   onClick={() => handleExport('markdown')}
                   disabled={isExporting}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition duration-200 shadow-md hover:shadow-xl flex items-center space-x-2"
+                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition duration-200 shadow-md hover:shadow-xl flex items-center space-x-2 flex-1 sm:flex-initial justify-center"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  <span>Export</span>
+                  <span className="hidden sm:inline">Export</span>
+                  <span className="sm:hidden">Export</span>
                 </button>
                 
                 <div className="relative group">
@@ -183,8 +184,8 @@ export default function FileDocumentation() {
           </div>
 
           {/* Tabs */}
-          <nav className="mt-6 border-b border-neutral-200">
-            <ul className="flex space-x-8 overflow-x-auto">
+          <nav className="mt-4 sm:mt-6 border-b border-neutral-200">
+            <ul className="flex space-x-4 sm:space-x-8 overflow-x-auto -mb-px scrollbar-hide">
               {[
                 { key: 'overview', label: 'Overview' },
                 { key: 'functions', label: 'Functions' },
@@ -197,7 +198,7 @@ export default function FileDocumentation() {
                 <li key={tab.key}>
                   <button
                     onClick={() => setActiveTab(tab.key as typeof activeTab)}
-                    className={`py-3 px-1 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
+                    className={`py-2 sm:py-3 px-1 sm:px-2 border-b-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
                       activeTab === tab.key
                         ? 'border-blue-600 text-blue-600'
                         : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
@@ -242,49 +243,49 @@ export default function FileDocumentation() {
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-fade-in">
             {/* Summary Card */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-neutral-200/50">
-              <h2 className="text-3xl font-bold text-neutral-900 mb-6 flex items-center">
-                <PencilSquareIcon className="w-10 h-10 text-blue-600 mr-4" />
-                File Summary
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 border border-neutral-200/50">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900 mb-4 sm:mb-6 flex items-center flex-wrap gap-2 sm:gap-4">
+                <PencilSquareIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-blue-600" />
+                <span>File Summary</span>
               </h2>
-              <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-6 rounded-xl border border-primary-100">
-                <div className="prose prose-primary max-w-none text-neutral-700 leading-relaxed">
+              <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-4 sm:p-6 rounded-xl border border-primary-100">
+                <div className="prose prose-primary max-w-none text-neutral-700 leading-relaxed text-sm sm:text-base">
                   <ReactMarkdown>{doc.summary}</ReactMarkdown>
                 </div>
               </div>
             </div>
 
             {/* Statistics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-neutral-600 text-sm font-medium mb-1">Total Lines</p>
-                    <p className="text-4xl font-bold text-neutral-900">{doc.stats.total_lines}</p>
+                    <p className="text-neutral-600 text-xs sm:text-sm font-medium mb-1">Total Lines</p>
+                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{doc.stats.total_lines}</p>
                   </div>
-                  <DocumentSolidIcon className="w-10 h-10 text-primary-400" />
+                  <DocumentSolidIcon className="w-8 h-8 sm:w-10 sm:h-10 text-primary-400 flex-shrink-0" />
                 </div>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-neutral-600 text-sm font-medium mb-1">Non-Empty Lines</p>
-                    <p className="text-4xl font-bold text-neutral-900">{doc.stats.non_empty_lines}</p>
+                    <p className="text-neutral-600 text-xs sm:text-sm font-medium mb-1">Non-Empty Lines</p>
+                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{doc.stats.non_empty_lines}</p>
                   </div>
-                  <svg className="w-10 h-10 text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-success-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-lg border border-neutral-200/50 hover:shadow-xl transition-shadow duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-neutral-600 text-sm font-medium mb-1">Complexity</p>
-                    <p className="text-4xl font-bold text-neutral-900">{doc.complexity}</p>
+                    <p className="text-neutral-600 text-xs sm:text-sm font-medium mb-1">Complexity</p>
+                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">{doc.complexity}</p>
                   </div>
-                  <svg className="w-10 h-10 text-danger-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-10 sm:h-10 text-danger-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>

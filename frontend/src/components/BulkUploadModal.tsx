@@ -67,25 +67,25 @@ export default function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform transition-all border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-              <Rocket className="w-6 h-6" />
-              <span>Bulk Upload</span>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 max-w-2xl w-full shadow-2xl transform transition-all border border-gray-200 my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-2">
+              <Rocket className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              <span className="truncate">Bulk Upload</span>
             </h3>
-            <p className="text-sm text-gray-600 mt-1">Process multiple GitHub repositories at once</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">Process multiple GitHub repositories at once</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-3xl leading-none w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-xl transition duration-200"
+            className="text-gray-400 hover:text-gray-600 text-2xl sm:text-3xl leading-none w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-100 rounded-xl transition duration-200 flex-shrink-0 self-start sm:self-auto"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Batch Name */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -109,9 +109,9 @@ export default function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProp
               value={githubUrls}
               onChange={(e) => setGithubUrls(e.target.value)}
               placeholder={`https://github.com/user/repo1\nhttps://github.com/user/repo2\nhttps://github.com/user/repo3`}
-              rows={8}
+              rows={6}
               required
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium resize-none"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none text-sm sm:text-base font-medium resize-none"
             />
             <p className="mt-2 text-xs text-gray-600">
               {githubUrls.split('\n').filter(u => u.trim()).length} repositories

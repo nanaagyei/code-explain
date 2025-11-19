@@ -140,22 +140,24 @@ export default function RepositoryDetail() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <Link
               to="/"
-              className="text-gray-600 hover:text-gray-900 transition duration-200"
+              className="text-gray-600 hover:text-gray-900 transition duration-200 text-sm sm:text-base"
             >
               ← Back
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">{repository.name}</h1>
-            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-              repository.status === 'completed' ? 'bg-green-100 text-green-800' :
-              repository.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-              repository.status === 'failed' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {repository.status}
-            </span>
+            <div className="flex items-center flex-wrap gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{repository.name}</h1>
+              <span className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                repository.status === 'completed' ? 'bg-green-100 text-green-800' :
+                repository.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                repository.status === 'failed' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {repository.status}
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -191,7 +193,7 @@ export default function RepositoryDetail() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
             <p className="text-blue-100 text-sm font-medium mb-1">Total Files</p>
             <p className="text-4xl font-bold">{repository.total_files}</p>

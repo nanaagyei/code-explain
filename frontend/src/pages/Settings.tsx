@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
@@ -14,7 +14,10 @@ import {
   Phone,
   BarChart3,
   XCircle,
-  UserCircle
+  UserCircle,
+  Settings as SettingsIcon,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 
 export default function Settings() {
@@ -22,6 +25,25 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingKey, setEditingKey] = useState<UserApiKey | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
   const [newKey, setNewKey] = useState<UserApiKeyCreate>({
     name: '',
     provider: 'openai',
@@ -101,35 +123,31 @@ export default function Settings() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
               <Link
                 to="/dashboard"
-                className="text-gray-600 hover:text-gray-900 transition duration-200"
+                className="text-gray-600 hover:text-gray-900 transition duration-200 text-sm sm:text-base"
               >
-                ← Back to Dashboard
+                ← Back
               </Link>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">C</span>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-lg sm:text-xl font-bold">C</span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-                  <p className="text-xs text-gray-500 font-medium">Manage your API keys and preferences</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
+                  <p className="text-xs text-gray-500 font-medium hidden sm:block">Manage your API keys and preferences</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* User Menu Dropdown */}
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={logout}
-                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition duration-200 flex-shrink-0"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200 cursor-pointer"
               >
-                Sign Out
-              </button>
-              
-              {/* Profile Section */}
-              <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200">
                 <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
                   <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
@@ -147,7 +165,40 @@ export default function Settings() {
                     {user?.username || 'User'}
                   </p>
                 </div>
-              </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
+                  <div className="px-4 py-3 border-b border-gray-100 md:hidden">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {user?.username || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate mt-1">
+                      {user?.email || ''}
+                    </p>
+                  </div>
+                  <Link
+                    to="/settings"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition duration-200"
+                  >
+                    <SettingsIcon className="w-5 h-5 text-gray-500" />
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition duration-200"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -156,22 +207,22 @@ export default function Settings() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* API Keys Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center space-x-2">
-                <Key className="w-6 h-6" />
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
+            <div className="flex-1">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 flex items-center space-x-2">
+                <Key className="w-5 h-5 sm:w-6 sm:h-6" />
                 <span>API Keys</span>
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 Manage your API keys for different AI providers. Your keys are encrypted and stored securely.
               </p>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition duration-200 shadow-lg flex items-center space-x-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 text-white text-sm sm:text-base font-semibold rounded-xl hover:bg-blue-600 transition duration-200 shadow-lg flex items-center justify-center space-x-2 w-full sm:w-auto"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               <span>Add API Key</span>

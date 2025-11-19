@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -20,7 +20,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   BoltIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  BookOpenIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { 
   FolderIcon as FolderSolidIcon,
@@ -31,6 +33,9 @@ import {
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -146,6 +151,23 @@ export default function Dashboard() {
     }
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': 
@@ -183,6 +205,15 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-2 sm:space-x-4">
+              <a
+                href="https://code-explain-production.up.railway.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition duration-200 flex items-center space-x-1"
+              >
+                <BookOpenIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Docs</span>
+              </a>
               <Link
                 to="/batch-jobs"
                 className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition duration-200 flex items-center space-x-1"
@@ -204,17 +235,13 @@ export default function Dashboard() {
                 <AcademicCapIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">AI Mentor</span>
               </Link>
-              <div className="flex items-center space-x-2 sm:space-x-3">
+              
+              {/* User Menu Dropdown */}
+              <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={logout}
-                  className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-xl transition duration-200 shadow-md hover:shadow-lg flex items-center space-x-1 flex-shrink-0"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200 cursor-pointer"
                 >
-                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign Out</span>
-                </button>
-                
-                {/* Profile Section */}
-                <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200">
                   <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
                     <UserCircleIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
@@ -232,7 +259,40 @@ export default function Dashboard() {
                       {user?.username || 'User'}
                     </p>
                   </div>
-                </div>
+                  <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
+                    <div className="px-4 py-3 border-b border-gray-100 sm:hidden">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {user?.username || 'User'}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate mt-1">
+                        {user?.email || ''}
+                      </p>
+                    </div>
+                    <Link
+                      to="/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition duration-200"
+                    >
+                      <Cog6ToothIcon className="w-5 h-5 text-gray-500" />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition duration-200"
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -388,14 +448,15 @@ export default function Dashboard() {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 to-accent-500/0 group-hover:from-primary-500/5 group-hover:to-accent-500/5 transition-all duration-300 rounded-2xl"></div>
                   
                   <Link to={`/repositories/${repo.id}`} className="block relative z-0">
-                    <div className="flex justify-between items-start mb-4">
-                      <h4 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition duration-200">
+                    <div className="flex justify-between items-start mb-4 gap-2">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition duration-200 break-words flex-1 min-w-0">
                         {repo.name}
                       </h4>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 text-xs font-bold rounded-full border backdrop-blur-sm flex items-center space-x-1 ${getStatusColor(repo.status)}`}>
+                      <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                        <span className={`px-2 sm:px-3 py-1 text-xs font-bold rounded-full border backdrop-blur-sm flex items-center space-x-1 whitespace-nowrap ${getStatusColor(repo.status)}`}>
                           {getStatusIcon(repo.status)}
-                          <span>{repo.status}</span>
+                          <span className="hidden sm:inline">{repo.status}</span>
+                          <span className="sm:hidden">{repo.status.charAt(0).toUpperCase()}</span>
                         </span>
                         {/* Delete button positioned beside the status tag */}
                         <button
@@ -457,14 +518,14 @@ export default function Dashboard() {
             </div>
           </>
         ) : (
-          <div className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-dashed border-neutral-300">
-            <div className="mb-6 animate-float flex justify-center">
-              <FolderIcon className="w-28 h-28 text-gray-400" />
+          <div className="text-center py-12 sm:py-16 lg:py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-dashed border-neutral-300 px-4">
+            <div className="mb-4 sm:mb-6 animate-float flex justify-center">
+              <FolderIcon className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-bold text-neutral-900 mb-3">
+            <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2 sm:mb-3">
               {searchQuery || filterStatus !== 'all' ? 'No matches found' : 'No repositories yet'}
             </h3>
-            <p className="text-neutral-600 mb-8 max-w-md mx-auto">
+            <p className="text-sm sm:text-base text-neutral-600 mb-6 sm:mb-8 max-w-md mx-auto">
               {searchQuery || filterStatus !== 'all' 
                 ? 'Try adjusting your search or filters'
                 : 'Start by uploading your first code repository and let AI generate comprehensive documentation'}
@@ -472,7 +533,7 @@ export default function Dashboard() {
             {!searchQuery && filterStatus === 'all' && (
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center space-x-2"
+                className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm sm:text-base font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center space-x-2"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />

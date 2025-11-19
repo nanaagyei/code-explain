@@ -97,7 +97,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left Side - Auth Forms */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 py-8 sm:py-12">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           {/* Logo */}
           <div className="flex items-center space-x-3 mb-8">
