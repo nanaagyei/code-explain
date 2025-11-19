@@ -127,7 +127,7 @@ export default function RepositoryDetail() {
             <AlertCircle className="w-16 h-16 text-gray-400" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Repository not found</h2>
-          <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link to="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium">
             ← Back to dashboard
           </Link>
         </div>
@@ -138,18 +138,19 @@ export default function RepositoryDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <Link
-              to="/"
-              className="text-gray-600 hover:text-gray-900 transition duration-200 text-sm sm:text-base"
+              to="/dashboard"
+              className="inline-flex items-center space-x-1 text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition duration-200 text-sm font-medium w-fit"
             >
-              ← Back
+              <span>←</span>
+              <span>Back to Dashboard</span>
             </Link>
             <div className="flex items-center flex-wrap gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{repository.name}</h1>
-              <span className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words min-w-0 flex-1">{repository.name}</h1>
+              <span className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap flex-shrink-0 ${
                 repository.status === 'completed' ? 'bg-green-100 text-green-800' :
                 repository.status === 'processing' ? 'bg-blue-100 text-blue-800' :
                 repository.status === 'failed' ? 'bg-red-100 text-red-800' :
@@ -165,13 +166,13 @@ export default function RepositoryDetail() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Card */}
         {repository.status === 'processing' && (
-          <div className="mb-6 bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                <Zap className="w-5 h-5 animate-pulse" />
-                <span>Processing Documentation...</span>
+          <div className="mb-6 bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-blue-100">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse flex-shrink-0" />
+                <span className="truncate">Processing Documentation...</span>
               </h3>
-              <span className="text-sm font-medium text-blue-600">
+              <span className="text-sm font-medium text-blue-600 flex-shrink-0">
                 {Math.round(progress)}%
               </span>
             </div>
@@ -215,9 +216,9 @@ export default function RepositoryDetail() {
         </div>
 
         {/* Files List */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <FolderOpen className="w-6 h-6" />
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
+            <FolderOpen className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
             <span>Files ({files.length})</span>
           </h3>
           
@@ -226,23 +227,23 @@ export default function RepositoryDetail() {
               <Link
                 key={file.id}
                 to={file.status === 'completed' ? `/repositories/${repository.id}/files/${file.id}` : '#'}
-                className={`block p-4 border-2 rounded-xl transition-all duration-200 ${
+                className={`block p-3 sm:p-4 border-2 rounded-xl transition-all duration-200 ${
                   file.status === 'completed'
                     ? 'border-gray-200 hover:border-blue-400 hover:shadow-md cursor-pointer'
                     : 'border-gray-100 cursor-default'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-gray-600">{getFileIcon(file.status)}</span>
-                    <div>
-                      <p className="font-medium text-gray-900">{file.file_path}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0">
+                  <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                    <span className="text-gray-600 flex-shrink-0 mt-0.5 sm:mt-0">{getFileIcon(file.status)}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate text-sm sm:text-base">{file.file_path}</p>
+                      <div className="flex items-center flex-wrap gap-2 mt-1.5 sm:mt-1">
+                        <span className="text-xs text-gray-500 px-2 py-0.5 sm:py-1 bg-gray-100 rounded whitespace-nowrap">
                           {file.language}
                         </span>
                         {file.complexity_score !== null && (
-                          <span className={`text-xs px-2 py-1 rounded ${
+                          <span className={`text-xs px-2 py-0.5 sm:py-1 rounded whitespace-nowrap ${
                             file.complexity_score < 5 ? 'bg-green-100 text-green-700' :
                             file.complexity_score < 10 ? 'bg-yellow-100 text-yellow-700' :
                             'bg-red-100 text-red-700'
@@ -253,7 +254,7 @@ export default function RepositoryDetail() {
                       </div>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${getFileStatusColor(file.status)}`}>
+                  <span className={`text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${getFileStatusColor(file.status)}`}>
                     {file.status}
                   </span>
                 </div>
@@ -264,18 +265,18 @@ export default function RepositoryDetail() {
 
         {/* Processing Logs */}
         {logs.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl shadow-xl p-6 overflow-hidden">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <ClipboardList className="w-5 h-5 mr-2" />
+          <div className="bg-gray-900 rounded-2xl shadow-xl p-4 sm:p-6 overflow-hidden">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center">
+              <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" />
               <span>Processing Logs</span>
             </h3>
-            <div className="bg-black/30 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-sm">
+            <div className="bg-black/30 rounded-lg p-3 sm:p-4 max-h-96 overflow-y-auto font-mono text-xs sm:text-sm scrollbar-hide">
               {logs.map((log, idx) => (
-                <div key={idx} className="text-gray-300 mb-1 hover:bg-gray-800/50 px-2 py-1 rounded transition duration-150">
-                  <span className="text-gray-500 mr-2">
+                <div key={idx} className="text-gray-300 mb-1 hover:bg-gray-800/50 px-2 py-1 rounded transition duration-150 break-words">
+                  <span className="text-gray-500 mr-2 whitespace-nowrap">
                     [{new Date().toLocaleTimeString()}]
                   </span>
-                  {log}
+                  <span className="break-words">{log}</span>
                 </div>
               ))}
             </div>
