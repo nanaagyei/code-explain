@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -33,7 +33,6 @@ import {
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();

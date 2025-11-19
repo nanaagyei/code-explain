@@ -86,7 +86,7 @@ export default function BatchJobs() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4 inline" />;
-      case 'processing': return <Settings className="w-4 h-4 inline animate-spin" />;
+      case 'processing': return <SettingsIcon className="w-4 h-4 inline animate-spin" />;
       case 'completed': return <CheckCircle2 className="w-4 h-4 inline" />;
       case 'failed': return <XCircle className="w-4 h-4 inline" />;
       case 'cancelled': return <Ban className="w-4 h-4 inline" />;
@@ -204,7 +204,7 @@ export default function BatchJobs() {
                   <p className="text-3xl font-bold text-green-900">{stats.processing_jobs}</p>
                 </div>
                 <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
-                  <Settings className="w-6 h-6 text-green-600" />
+                  <SettingsIcon className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </div>
