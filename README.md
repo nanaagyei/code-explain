@@ -10,6 +10,9 @@ Transform your code documentation with AI-powered analysis, interactive diagrams
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
+### 🌐 **Live Site**
+Visit our live site: **[CodeXplain](https://code-xplain.up.railway.app)**
+
 ## ✨ Features
 
 ### 🤖 **AI-Powered Documentation**
@@ -128,7 +131,7 @@ npm run dev
 - **[Troubleshooting](docs/docs/troubleshooting/)** - Common issues and solutions
 
 ### 🌐 **Live Documentation Site**
-Visit our comprehensive documentation site: **[docs.codeexplain.dev](https://docs.codeexplain.dev)**
+Visit our comprehensive documentation site: **[CodeXplain Docs](https://code-explain-production.up.railway.app)**
 
 ## 🏗️ Architecture
 
