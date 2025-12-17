@@ -34,6 +34,10 @@ class Repository(Base):
     meta_info = Column(JSON, nullable=True)  # Renamed from 'metadata' (reserved keyword)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    total_tokens_used = Column(Integer, default=0)
+    total_credits_charged = Column(Integer, default=0)
+    billing_currency = Column(String(10), default="usd")
+    last_billed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     user = relationship("User", back_populates="repositories")
@@ -79,6 +83,9 @@ class CodeFile(Base):
     mentor_insights = Column(JSON, nullable=True)  # Skill level, learning suggestions, challenges
     status = Column(String, default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
+    tokens_used = Column(Integer, default=0)
+    credits_charged = Column(Integer, default=0)
+    billing_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

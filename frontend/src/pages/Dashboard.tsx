@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import type { AxiosError } from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
@@ -48,11 +49,38 @@ export default function Dashboard() {
   const [githubUrl, setGithubUrl] = useState('');
   const [maxFiles, setMaxFiles] = useState(100);
   const [selectedPromptTemplate, setSelectedPromptTemplate] = useState<number | null>(null);
+  const [billingMessage, setBillingMessage] = useState<string | null>(null);
+
+  const handleBillingError = (error: AxiosError<{ detail?: string }>) => {
+    if (error.response?.status === 402) {
+      setBillingMessage(error.response?.data?.detail ?? 'Credits are required to run AI features.');
+    }
+  };
 
   // Fetch repositories
   const { data: repositories, isLoading } = useQuery({
     queryKey: ['repositories'],
     queryFn: () => apiClient.getRepositories(),
+  });
+
+  const { data: billingSummary } = useQuery({
+    queryKey: ['billing', 'summary'],
+    queryFn: () => apiClient.getBillingSummary(),
+    enabled: Boolean(user),
+    retry: false,
+  });
+
+  const { data: creditPacks } = useQuery({
+    queryKey: ['billing', 'packs'],
+    queryFn: () => apiClient.getCreditPacks(),
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: billingTransactions } = useQuery({
+    queryKey: ['billing', 'transactions'],
+    queryFn: () => apiClient.getBillingTransactions(),
+    enabled: Boolean(user),
   });
 
   // Upload mutation
@@ -65,6 +93,10 @@ export default function Dashboard() {
       setSelectedFiles([]);
       setRepositoryName('');
       setSelectedPromptTemplate(null);
+      setBillingMessage(null);
+    },
+    onError: (error: AxiosError<{ detail?: string }>) => {
+      handleBillingError(error);
     },
   });
 
@@ -78,6 +110,10 @@ export default function Dashboard() {
       setGithubUrl('');
       setMaxFiles(100);
       setSelectedPromptTemplate(null);
+      setBillingMessage(null);
+    },
+    onError: (error: AxiosError<{ detail?: string }>) => {
+      handleBillingError(error);
     },
   });
 
@@ -87,6 +123,17 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       setDeleteConfirmId(null);
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: (packId: number) => apiClient.createCheckoutSession(packId),
+    onSuccess: (session) => {
+      setBillingMessage('Checkout opened in a new tab. Complete payment to refresh your balance.');
+      window.open(session.url, '_blank', 'noopener,noreferrer');
+    },
+    onError: (error: AxiosError<{ detail?: string }>) => {
+      setBillingMessage(error.response?.data?.detail ?? 'Unable to start checkout right now.');
     },
   });
 
@@ -150,6 +197,19 @@ export default function Dashboard() {
     }
   };
 
+  const formatCurrency = (amountCents: number, currency = 'usd') =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(amountCents / 100);
+
+  const handleCheckout = (packId: number) => {
+    checkoutMutation.mutate(packId);
+  };
+
+  const refreshBilling = () => {
+    queryClient.invalidateQueries({ queryKey: ['billing'], exact: false });
+  };
+
+  const creditValueFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -198,9 +258,6 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-500 font-medium hidden sm:block">AI-Powered Documentation</p>
                 </div>
               </div>
-              <span className="px-2 py-1 sm:px-3 sm:py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
-                GPT-4
-              </span>
             </div>
             
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -358,6 +415,128 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {billingMessage && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl px-4 py-3 flex items-start justify-between">
+            <span className="pr-4 text-sm">{billingMessage}</span>
+            <button
+              onClick={() => setBillingMessage(null)}
+              className="text-xs font-semibold uppercase tracking-wide"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-2xl p-6 shadow-lg">
+            <p className="text-sm font-medium text-white/80">Current platform credits</p>
+            <p className="text-4xl font-bold mt-2">
+              {billingSummary ? billingSummary.wallet.balance_credits.toLocaleString() : '—'}
+            </p>
+            <p className="text-sm text-white/80 mt-2">
+              1 credit ≈{' '}
+              {billingSummary ? billingSummary.tokens_per_credit.toLocaleString() : '—'} tokens{' '}
+              {billingSummary
+                ? `(${creditValueFormatter.format(billingSummary.estimated_token_cost_per_credit)} per credit)`
+                : ''}
+            </p>
+            <p className="text-xs text-white/70 mt-4">
+              {billingSummary?.has_user_provided_api_key
+                ? 'Your personal OpenAI API key is connected. Credits are only consumed if you disconnect it.'
+                : 'Platform credits are consumed whenever you run AI without adding your own OpenAI API key.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 mt-5">
+              <Link
+                to="/settings"
+                className="flex-1 text-center bg-white/90 text-indigo-700 font-semibold py-2 rounded-xl shadow hover:bg-white transition"
+              >
+                Manage API keys
+              </Link>
+              <button
+                onClick={refreshBilling}
+                className="flex-1 text-center border border-white/60 text-white font-semibold py-2 rounded-xl hover:bg-white/10 transition"
+              >
+                Refresh balance
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-neutral-200/80 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Prepaid credit packs</h3>
+                <p className="text-sm text-gray-500">Powered by Stripe Checkout</p>
+              </div>
+              {checkoutMutation.isPending && (
+                <span className="text-xs text-purple-600 font-medium">Opening…</span>
+              )}
+            </div>
+            {creditPacks && creditPacks.length > 0 ? (
+              <div className="space-y-3">
+                {creditPacks.slice(0, 3).map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="border border-neutral-200 rounded-xl px-4 py-3 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{pack.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {pack.credits.toLocaleString()} credits · {formatCurrency(pack.price_cents, pack.currency)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCheckout(pack.id)}
+                      disabled={checkoutMutation.isPending}
+                      className="px-3 py-1.5 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 transition"
+                    >
+                      Buy
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No credit packs are configured yet. Check back soon or connect your own API key.
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-4">
+              Platform credits are only consumed when you haven’t connected your own OpenAI API key.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-neutral-200/80 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent billing activity</h3>
+            <ul className="divide-y divide-neutral-200/70">
+              {billingTransactions && billingTransactions.length > 0 ? (
+                billingTransactions.slice(0, 4).map((tx) => (
+                  <li key={tx.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {tx.description || tx.transaction_type}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(tx.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div
+                      className={`text-sm font-semibold ${
+                        tx.credits_delta >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {tx.credits_delta > 0 ? '+' : ''}
+                      {tx.credits_delta} cr
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="py-2 text-sm text-gray-500">
+                  No billing activity yet. Purchases and usage will appear here.
+                </li>
+              )}
+            </ul>
+          </div>
+        </section>
 
         {/* Action Bar with Search & Filter */}
         <div className="mb-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-neutral-200/50 p-4 sm:p-6">

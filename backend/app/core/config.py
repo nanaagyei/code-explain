@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_per_minute: int = 20
     max_file_size_mb: int = 10
+
+    # Stripe / Billing
+    stripe_secret_key: str | None = None
+    stripe_publishable_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_checkout_success_url: str = "http://localhost:5173/billing/success"
+    stripe_checkout_cancel_url: str = "http://localhost:5173/billing/cancel"
+    billing_tokens_per_credit: int = 1000
+    billing_estimated_cost_per_credit_cents: int = 150
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -30,7 +30,11 @@ import type {
   ArchitectureDiagramResponse,
   MentorInsightsResponse,
   BatchAnalysisRequest,
-  BatchAnalysisResponse
+  BatchAnalysisResponse,
+  CreditPack,
+  BillingSummary,
+  CreditTransaction,
+  StripeCheckoutSession
 } from '../types/index';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -281,6 +285,30 @@ class ApiClient {
 
   async getBatchJobStats(): Promise<BatchJobStats> {
     const response = await this.client.get<BatchJobStats>('/batch-jobs/stats');
+    return response.data;
+  }
+
+  // ========== Billing ==========
+
+  async getCreditPacks(): Promise<CreditPack[]> {
+    const response = await this.client.get<CreditPack[]>('/billing/packs');
+    return response.data;
+  }
+
+  async getBillingSummary(): Promise<BillingSummary> {
+    const response = await this.client.get<BillingSummary>('/billing/wallet');
+    return response.data;
+  }
+
+  async getBillingTransactions(): Promise<CreditTransaction[]> {
+    const response = await this.client.get<CreditTransaction[]>('/billing/transactions');
+    return response.data;
+  }
+
+  async createCheckoutSession(creditPackId: number): Promise<StripeCheckoutSession> {
+    const response = await this.client.post<StripeCheckoutSession>('/billing/checkout', {
+      credit_pack_id: creditPackId,
+    });
     return response.data;
   }
 

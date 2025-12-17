@@ -79,6 +79,22 @@ MAX_FILE_SIZE_MB=10
 
 - Tune limits by environment and plan tiers
 
+### Billing & Stripe (Optional but recommended)
+
+```bash
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/billing/cancel
+BILLING_TOKENS_PER_CREDIT=1000
+BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
+```
+
+- Configure these values to enable prepaid credit packs backed by Stripe Checkout
+- `BILLING_TOKENS_PER_CREDIT` controls how many OpenAI tokens equal one credit
+- Webhook secret is required so deposits happen automatically after checkout completes
+
 ## Frontend Configuration
 
 Create `frontend/.env` based on `frontend/env.example`:

@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, WebSock
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from typing import List, Dict, Any
+from datetime import datetime
 import asyncio
 import json
 
@@ -20,10 +21,13 @@ from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.repository import Repository, CodeFile
 from app.models.prompt_template import PromptTemplate
+from app.models.user_api_key import UserApiKey
 from app.services.documentation_service import DocumentationPipeline
+from app.services.ai_service import AIDocumentationService
 from app.services.code_parser import CodeParser
 from app.services.github_service import process_github_repository
 from app.services.prompt_template_service import PromptTemplateService
+from app.services.billing_service import BillingService, InsufficientCreditsError
 from app.schemas.repository import (
     RepositoryResponse,
     CodeFileResponse,
@@ -34,6 +38,21 @@ from app.schemas.repository import (
 router = APIRouter(prefix="/repositories", tags=["repositories"])
 
 
+async def _ensure_ai_usage_allowed(current_user: User, db: AsyncSession) -> None:
+    """
+    Require either a personal API key or at least one platform credit before processing.
+    """
+    billing_service = BillingService(db)
+    has_api_key = await billing_service.user_has_personal_api_key(current_user.id)
+    if has_api_key:
+        return
+
+    wallet = await billing_service.get_or_create_wallet(current_user.id)
+    if wallet.balance_credits <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Add your own OpenAI API key or purchase credits to run AI features.",
+        )
 @router.post("/", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_repository(
     name: str = Form(...),
@@ -58,6 +77,8 @@ async def create_repository(
         print(f"\n📦 Creating repository: {name}")
         print(f"   User: {current_user.username}")
         print(f"   Files: {len(files)}")
+
+        await _ensure_ai_usage_allowed(current_user, db)
         
         # Create repository record
         repo = Repository(
@@ -166,6 +187,8 @@ async def create_repository_from_github(
         print(f"\n🐙 Creating repository from GitHub: {github_url}")
         print(f"   User: {current_user.username}")
         print(f"   Max files: {max_files}")
+
+        await _ensure_ai_usage_allowed(current_user, db)
         
         # Clone and extract files
         try:
@@ -300,8 +323,63 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
             repo.status = "processing"
             await db.commit()
             
-            # Process each file
-            pipeline = DocumentationPipeline()
+            billing_service = BillingService(db)
+            usage_summary: Dict[int, Dict[str, Any]] = {}
+            
+            user_api_key = None
+            key_result = await db.execute(
+                select(UserApiKey)
+                .where(
+                    UserApiKey.user_id == repo.user_id,
+                    UserApiKey.is_active == True  # noqa: E712
+                )
+                .order_by(UserApiKey.last_used_at.desc(), UserApiKey.created_at.asc())
+            )
+            user_api_key = key_result.scalars().first()
+            
+            async def usage_callback(tokens_used: int, context: Dict[str, Any]):
+                if tokens_used <= 0:
+                    return
+                credits_needed = billing_service.tokens_to_credits(tokens_used)
+                if credits_needed <= 0:
+                    return
+                code_file_id = context.get("code_file_id")
+                description = f"AI usage - {context.get('stage', 'unknown')}"
+                await billing_service.debit_credits(
+                    user_id=repo.user_id,
+                    credits=credits_needed,
+                    tokens=tokens_used,
+                    description=description,
+                    source="repository_processing",
+                    repository_id=repo.id,
+                    code_file_id=code_file_id,
+                    extra_metadata=context,
+                )
+                if code_file_id:
+                    entry = usage_summary.setdefault(
+                        code_file_id,
+                        {"tokens": 0, "credits": 0, "events": []}
+                    )
+                    entry["tokens"] += tokens_used
+                    entry["credits"] += credits_needed
+                    entry["events"].append({
+                        "stage": context.get("stage"),
+                        "tokens": tokens_used,
+                        "credits": credits_needed,
+                        "name": context.get("name") or context.get("file_path"),
+                    })
+                repo.total_credits_charged += credits_needed
+                repo.last_billed_at = datetime.utcnow()
+            
+            ai_service = (
+                AIDocumentationService.create_with_user_api_key(user_api_key)
+                if user_api_key else AIDocumentationService()
+            )
+            
+            pipeline = DocumentationPipeline(
+                usage_callback=None if user_api_key else usage_callback,
+                ai_service=ai_service
+            )
             
             for file in files:
                 try:
@@ -310,17 +388,33 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
                     
                     print(f"\n   Processing: {file.file_path}")
                     
+                    tokens_before = pipeline.ai_service.get_total_tokens_used()
                     result = await pipeline.process_file(
                         file.original_content,
                         file.file_path,
-                        file.language
+                        file.language,
+                        code_file_id=file.id
                     )
+                    tokens_after = pipeline.ai_service.get_total_tokens_used()
+                    file.tokens_used = max(0, tokens_after - tokens_before)
+                    repo.total_tokens_used += file.tokens_used
                     
                     if result['status'] == 'success':
                         file.documentation = result['data']
                         file.documented_content = result['data']['documented_code']
                         file.complexity_score = result['data']['complexity']
                         file.status = "completed"
+                        summary = usage_summary.get(file.id)
+                        if summary:
+                            file.credits_charged = summary["credits"]
+                            file.billing_metadata = summary
+                        else:
+                            file.credits_charged = 0
+                            file.billing_metadata = {
+                                "tokens": file.tokens_used,
+                                "credits": 0,
+                                "events": []
+                            }
                         print(f"   ✅ {file.file_path} completed")
                     else:
                         file.status = "failed"
@@ -330,6 +424,17 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
                     repo.processed_files += 1
                     await db.commit()
                     
+                except InsufficientCreditsError:
+                    file.status = "failed"
+                    file.error_message = (
+                        "Insufficient credits to continue processing. "
+                        "Please purchase more credits or add your own API key."
+                    )
+                    await db.commit()
+                    repo.status = "failed"
+                    await db.commit()
+                    print(f"   💸 Stopped processing {file.file_path}: not enough credits")
+                    return
                 except Exception as e:
                     file.status = "failed"
                     file.error_message = str(e)

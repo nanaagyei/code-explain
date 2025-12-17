@@ -9,6 +9,7 @@ Features:
 - Intelligent caching to reduce API costs
 - Token usage tracking
 """
+from dataclasses import dataclass
 from openai import OpenAI
 from app.core.config import get_settings
 from app.core.cache import cache
@@ -19,6 +20,14 @@ from app.models.prompt_template import PromptTemplate
 from app.models.user_api_key import UserApiKey
 
 settings = get_settings()
+
+
+@dataclass
+class AIServiceResult:
+    """Wrapper for OpenAI responses with token usage."""
+
+    content: str
+    tokens_used: int
 
 
 class AIDocumentationService:
@@ -43,7 +52,7 @@ class AIDocumentationService:
         function_info: Dict,
         code_context: str,
         language: str
-    ) -> str:
+    ) -> AIServiceResult:
         """
         Generate documentation for a single function.
         
@@ -104,14 +113,14 @@ class AIDocumentationService:
         # Cache result for 24 hours
         await cache.set(cache_key, {"documentation": documentation}, expire=86400)
         
-        return documentation
+        return AIServiceResult(content=documentation, tokens_used=tokens_used)
     
     def _create_function_prompt(
         self,
         function_info: Dict,
         code_context: str,
         language: str
-    ) -> str:
+    ) -> AIServiceResult:
         """Create prompt for function documentation"""
         
         existing_docstring = function_info.get('docstring', 'None')
@@ -203,14 +212,14 @@ Format your response in clear markdown. Be concise but thorough."""
         # Cache for 24 hours
         await cache.set(cache_key, {"documentation": documentation}, expire=86400)
         
-        return documentation
+        return AIServiceResult(content=documentation, tokens_used=tokens_used)
     
     def _create_class_prompt(
         self,
         class_info: Dict,
         code_context: str,
         language: str
-    ) -> str:
+    ) -> AIServiceResult:
         """Create prompt for class documentation"""
         
         methods = class_info.get('methods', [])
@@ -344,14 +353,14 @@ Be concise but insightful. Format in clear markdown."""
         # Cache for 24 hours
         await cache.set(cache_key, {"summary": summary}, expire=86400)
         
-        return summary
+        return AIServiceResult(content=summary, tokens_used=tokens_used)
     
     async def generate_inline_comments(
         self,
         code: str,
         language: str,
         parsed_info: Dict
-    ) -> str:
+    ) -> AIServiceResult:
         """
         Add helpful inline comments to complex code.
         
@@ -367,7 +376,7 @@ Be concise but insightful. Format in clear markdown."""
         complexity = parsed_info.get('complexity', 0)
         if complexity < 5:
             print(f"  ⏭️  Skipping inline comments (low complexity: {complexity})")
-            return code
+            return AIServiceResult(content=code, tokens_used=0)
         
         print(f"  🤖 Adding inline comments (complexity: {complexity})")
         
@@ -417,7 +426,7 @@ Return ONLY the code with added comments. Do not include explanations or markdow
             # Remove first line (```language) and last line (```)
             commented_code = '\n'.join(lines[1:-1]) if len(lines) > 2 else commented_code
         
-        return commented_code
+        return AIServiceResult(content=commented_code, tokens_used=tokens_used)
     
     def get_total_tokens_used(self) -> int:
         """Get total tokens used in this session"""

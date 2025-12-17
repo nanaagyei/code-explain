@@ -362,6 +362,61 @@ export interface MentorInsightsResponse {
   cached: boolean;
 }
 
+// ========== Billing ==========
+
+export interface CreditPack {
+  id: number;
+  name: string;
+  description?: string;
+  credits: number;
+  price_cents: number;
+  currency: string;
+  stripe_price_id?: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface UserCreditWallet {
+  id: number;
+  user_id: number;
+  balance_credits: number;
+  lifetime_credits_purchased: number;
+  lifetime_credits_spent: number;
+  last_recalculated_at?: string;
+  updated_at?: string;
+}
+
+export interface CreditTransaction {
+  id: number;
+  wallet_id: number;
+  transaction_type: string;
+  credits_delta: number;
+  balance_after: number;
+  tokens?: number;
+  description?: string;
+  source?: string;
+  metadata?: Record<string, unknown> | null;
+  repository_id?: number;
+  code_file_id?: number;
+  created_at: string;
+}
+
+export interface BillingSummary {
+  wallet: UserCreditWallet;
+  tokens_per_credit: number;
+  estimated_token_cost_per_credit: number;
+  has_user_provided_api_key: boolean;
+}
+
+export interface StripeCheckoutSession {
+  session_id: string;
+  url: string;
+  expires_at: string;
+  amount_total: number;
+  currency: string;
+  status: string;
+}
+
 export interface BatchAnalysisRequest {
   analysis_types: string[];  // ["review", "quality", "architecture", "mentor"]
   force_regenerate: boolean;

@@ -4,7 +4,16 @@ from contextlib import asynccontextmanager
 from app.core.config import get_settings
 from app.core.cache import cache
 from app.core.database import engine, Base
-from app.api import auth, repositories, chat, prompt_templates, user_api_keys, batch_jobs, code_analysis
+from app.api import (
+    auth,
+    repositories,
+    chat,
+    prompt_templates,
+    user_api_keys,
+    batch_jobs,
+    code_analysis,
+    billing,
+)
 
 settings = get_settings()
 
@@ -70,6 +79,7 @@ app.include_router(prompt_templates.router)
 app.include_router(user_api_keys.router)
 app.include_router(batch_jobs.router)
 app.include_router(code_analysis.router)
+app.include_router(billing.router)
 
 
 # Root endpoint

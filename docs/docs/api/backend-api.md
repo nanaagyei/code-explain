@@ -243,6 +243,75 @@ Content-Type: application/json
 }
 ```
 
+### Billing
+
+#### List Credit Packs
+Retrieve the currently available prepaid credit packs.
+
+```http
+GET /billing/packs
+```
+
+#### Get Wallet Summary
+Returns the wallet balance, tokens-per-credit setting, and whether the user has connected their own OpenAI key.
+
+```http
+GET /billing/wallet
+```
+
+```json
+{
+  "wallet": {
+    "balance_credits": 1200,
+    "lifetime_credits_purchased": 2000,
+    "lifetime_credits_spent": 800,
+    "updated_at": "2025-11-20T15:30:00Z"
+  },
+  "tokens_per_credit": 1000,
+  "estimated_token_cost_per_credit": 1.5,
+  "has_user_provided_api_key": false
+}
+```
+
+#### List Transactions
+Returns the latest ledger entries (deposits, debits, refunds).
+
+```http
+GET /billing/transactions
+```
+
+#### Create Checkout Session
+Starts a Stripe Checkout session for the selected pack. The response contains the hosted Stripe URL; open it in a new tab/window on the frontend.
+
+```http
+POST /billing/checkout
+Content-Type: application/json
+
+{
+  "credit_pack_id": 1
+}
+```
+
+```json
+{
+  "session_id": "cs_test_123",
+  "url": "https://checkout.stripe.com/pay/cs_test_123",
+  "expires_at": "2025-11-20T15:45:00Z",
+  "amount_total": 1400,
+  "currency": "usd",
+  "status": "open"
+}
+```
+
+#### Stripe Webhook
+Stripe sends `checkout.session.completed` events to this endpoint. The backend validates the signature and credits the wallet. Configure the webhook secret via `STRIPE_WEBHOOK_SECRET`.
+
+```http
+POST /billing/stripe/webhook
+```
+
+> **Note:** Repository uploads now return HTTP `402 Payment Required` when the user has neither a personal OpenAI key nor enough credits to cover usage.
+
 ## Error Handling
 
 ### Standard Error Response

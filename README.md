@@ -57,6 +57,11 @@ Visit our live site: **[CodeXplain](https://code-xplain.up.railway.app)**
 - **Export Options**: Generate documentation in multiple formats (Markdown, PDF, HTML)
 - **Real-time Collaboration**: Live updates and team sharing
 
+### 💳 **Transparent Billing**
+- **Prepaid Credit Wallets**: Sell Stripe-powered credit packs so users can run AI without uploading an API key
+- **Bring-Your-Own Key**: Users with a personal OpenAI key bypass platform credits entirely
+- **In-App Visibility**: Dashboard cards show balance, usage history, and shortcuts to manage payment methods
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -212,7 +217,18 @@ OPENAI_API_KEY=your-openai-api-key-here
 HOST=0.0.0.0
 PORT=8000
 DEBUG=True
+
+# Billing / Stripe
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/billing/cancel
+BILLING_TOKENS_PER_CREDIT=1000
+BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
 ```
+
+- Stripe variables enable the prepaid credit experience; omit them if you only want to support bring-your-own OpenAI keys.
 
 ### **Custom AI Prompts**
 Configure documentation style in Settings:

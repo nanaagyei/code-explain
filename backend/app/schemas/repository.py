@@ -25,6 +25,10 @@ class RepositoryResponse(RepositoryBase):
     total_files: int
     processed_files: int
     status: str  # pending, processing, completed, failed
+    total_tokens_used: int
+    total_credits_charged: int
+    billing_currency: str
+    last_billed_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     
@@ -39,6 +43,8 @@ class CodeFileResponse(BaseModel):
     language: str
     complexity_score: Optional[int] = None
     status: str
+    tokens_used: int
+    credits_charged: int
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)

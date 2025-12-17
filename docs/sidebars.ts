@@ -26,6 +26,7 @@ const sidebars: SidebarsConfig = {
         'features/github-integration',
         'features/custom-prompts',
         'features/api-key-management',
+        'features/billing',
       ],
     },
     {
