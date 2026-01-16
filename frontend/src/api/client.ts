@@ -69,7 +69,10 @@ class ApiClient {
         // Auto-logout on 401 Unauthorized
         if (error.response?.status === 401) {
           localStorage.removeItem('access_token');
-          window.location.href = '/login';
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }

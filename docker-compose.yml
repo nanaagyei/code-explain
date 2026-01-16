@@ -5,10 +5,10 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: codeexplain
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_PASSWORD: devpassword123
       POSTGRES_DB: codeexplain_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

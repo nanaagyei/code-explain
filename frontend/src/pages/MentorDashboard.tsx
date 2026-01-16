@@ -42,6 +42,8 @@ const MentorDashboard: React.FC = () => {
       setInsights(response.mentor_insights);
     } catch (error) {
       console.error('Error generating mentor insights:', error);
+      // Could show toast/alert here if needed
+      // For now, just log - the UI can handle this gracefully
     } finally {
       setIsGenerating(false);
     }

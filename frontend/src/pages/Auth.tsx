@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../api/client';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 
 type AuthMode = 'login' | 'register';
 
@@ -46,7 +47,10 @@ export default function Auth() {
       apiClient.login(username, password),
     onSuccess: ({ user, access_token }) => {
       login(user, access_token);
-      navigate('/dashboard');
+      // Use setTimeout to ensure state update propagates before navigation
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 0);
     },
   });
 
@@ -339,7 +343,10 @@ export default function Auth() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-700 font-medium">
-                    {(currentError as Error)?.message || 'An error occurred'}
+                    {getUserFriendlyError(
+                      currentError,
+                      mode === 'login' ? ErrorContexts.login : ErrorContexts.register
+                    )}
                   </p>
                 </div>
               </div>

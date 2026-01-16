@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 import ReactMarkdown from 'react-markdown';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -51,7 +52,8 @@ export default function FileDocumentation() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export documentation');
+      const errorMessage = getUserFriendlyError(error, ErrorContexts.export);
+      alert(errorMessage);
     } finally {
       setIsExporting(false);
     }

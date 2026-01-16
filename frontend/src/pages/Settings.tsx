@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { getUserFriendlyError } from '../utils/errorMessages';
 import type { UserApiKey, UserApiKeyCreate, UserApiKeyUpdate } from '../types/index';
 import { 
   Key, 
@@ -477,7 +478,7 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
                   <XCircle className="w-5 h-5" />
-                  <span>Failed to add API key</span>
+                  <span>{getUserFriendlyError(addKeyMutation.error, { operation: 'add API key' })}</span>
                 </div>
               </div>
             )}
@@ -552,7 +553,7 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
                   <XCircle className="w-5 h-5" />
-                  <span>Failed to update API key</span>
+                  <span>{getUserFriendlyError(updateKeyMutation.error, { operation: 'update API key' })}</span>
                 </div>
               </div>
             )}

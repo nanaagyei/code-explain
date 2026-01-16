@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { getUserFriendlyError } from '../utils/errorMessages';
 import type { BatchJobItemCreate } from '../types/index';
 import { Rocket, XCircle } from 'lucide-react';
 
@@ -179,7 +180,7 @@ export default function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProp
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
               <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
                 <XCircle className="w-5 h-5" />
-                <span>{(createBatchMutation.error as Error)?.message || 'Failed to create batch job'}</span>
+                <span>{getUserFriendlyError(createBatchMutation.error, { operation: 'create batch job' })}</span>
               </div>
             </div>
           )}

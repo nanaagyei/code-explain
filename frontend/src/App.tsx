@@ -101,12 +101,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { setUser, setLoading } = useAuthStore();
+  const { user, setUser, setLoading } = useAuthStore();
   
-  // Check authentication on mount
+  // Check authentication on mount only (runs once)
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('access_token');
+      
+      // If user is already set, don't refetch (handles case where login just set it)
+      if (user) {
+        setLoading(false);
+        return;
+      }
       
       if (!token) {
         setLoading(false);
@@ -114,8 +120,8 @@ function App() {
       }
       
       try {
-        const user = await apiClient.getCurrentUser();
-        setUser(user);
+        const fetchedUser = await apiClient.getCurrentUser();
+        setUser(fetchedUser);
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('access_token');
@@ -126,7 +132,8 @@ function App() {
     };
     
     checkAuth();
-  }, [setUser, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   return (
     <QueryClientProvider client={queryClient}>

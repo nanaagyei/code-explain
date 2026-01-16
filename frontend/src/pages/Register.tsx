@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -20,7 +21,10 @@ export default function Register() {
     },
     onSuccess: (data) => {
       loginToStore(data.login.user, data.login.access_token);
-      navigate('/dashboard');
+      // Use setTimeout to ensure state update propagates before navigation
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 0);
     },
   });
 
@@ -188,7 +192,7 @@ export default function Register() {
             {registerMutation.isError && (
               <div className="p-4 bg-danger-light border border-danger rounded-lg">
                 <p className="text-danger-dark text-sm font-medium">
-                  {(registerMutation.error as Error)?.message || 'Registration failed'}
+                  {getUserFriendlyError(registerMutation.error, ErrorContexts.register)}
                 </p>
               </div>
             )}

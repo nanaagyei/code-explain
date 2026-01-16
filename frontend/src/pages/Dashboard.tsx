@@ -9,6 +9,7 @@ import BentoChat from '../components/BentoChat';
 import { PromptTemplateSelector } from '../components/PromptTemplateSelector';
 import BulkUploadModal from '../components/BulkUploadModal';
 import type { Repository } from '../types/index';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 import { 
   FolderIcon, 
   DocumentTextIcon, 
@@ -53,7 +54,7 @@ export default function Dashboard() {
 
   const handleBillingError = (error: AxiosError<{ detail?: string }>) => {
     if (error.response?.status === 402) {
-      setBillingMessage(error.response?.data?.detail ?? 'Credits are required to run AI features.');
+      setBillingMessage(getUserFriendlyError(error));
     }
   };
 
@@ -133,7 +134,7 @@ export default function Dashboard() {
       window.open(session.url, '_blank', 'noopener,noreferrer');
     },
     onError: (error: AxiosError<{ detail?: string }>) => {
-      setBillingMessage(error.response?.data?.detail ?? 'Unable to start checkout right now.');
+      setBillingMessage(getUserFriendlyError(error, { operation: 'start checkout' }));
     },
   });
 
@@ -983,9 +984,10 @@ export default function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="text-danger-700 text-xs sm:text-sm font-medium">
-                    {(uploadMutation.error as Error)?.message || 
-                     (githubMutation.error as Error)?.message || 
-                     'Operation failed'}
+                    {getUserFriendlyError(
+                      uploadMutation.error || githubMutation.error,
+                      uploadTab === 'files' ? ErrorContexts.upload : ErrorContexts.github
+                    )}
                   </p>
                 </div>
               )}
@@ -1042,7 +1044,7 @@ export default function Dashboard() {
             {deleteMutation.isError && (
               <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-xl">
                 <p className="text-danger-700 text-sm text-center font-medium">
-                  Failed to delete repository
+                  {getUserFriendlyError(deleteMutation.error, { operation: 'delete repository', resource: 'Repository' })}
                 </p>
               </div>
             )}
