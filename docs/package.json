@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "copy-assets": "node copy-assets.cjs",
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "build": "docusaurus build",
+    "start": "npm run copy-assets && docusaurus start",
+    "build": "npm run copy-assets && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -19,6 +20,7 @@
     "@docusaurus/types": "3.9.2",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
+    "baseline-browser-mapping": "^2.9.18",
     "typescript": "^5.0.0"
   },
   "browserslist": {
@@ -45,13 +47,5 @@
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
-  },
-  "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.9.2",
-    "@docusaurus/tsconfig": "3.9.2",
-    "@docusaurus/types": "3.9.2",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "typescript": "^5.0.0"
   }
 }

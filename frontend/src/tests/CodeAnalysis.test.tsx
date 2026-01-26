@@ -3,9 +3,8 @@
  * 
  * Tests:
  * - CodeReview component rendering and interactions
- * - QualityMetrics component with progress indicators
+ * - Health score component with detailed breakdown
  * - ArchitectureDiagram component with React Flow
- * - MentorHint component behavior
  * - API integration and error handling
  */
 
@@ -15,7 +14,6 @@ import { BrowserRouter } from 'react-router-dom';
 import CodeReview from '../components/CodeReview';
 import QualityMetrics from '../components/QualityMetrics';
 import ArchitectureDiagram from '../components/ArchitectureDiagram';
-import MentorHint from '../components/MentorHint';
 import { apiClient } from '../api/client';
 
 // Mock the API client
@@ -72,20 +70,24 @@ const mockCodeReviewData = {
   summary: 'Code has good structure but needs security improvements'
 };
 
-const mockQualityMetricsData = {
-  maintainability: 80.0,
-  testability: 65.0,
-  readability: 90.0,
-  performance: 70.0,
-  security: 60.0,
-  overall: 73.0,
+const mockHealthScoreData = {
+  score: 78.5,
+  grade: 'C',
+  summary: 'Strong readability with room to improve security.',
+  metrics: {
+    maintainability: 80.0,
+    testability: 65.0,
+    readability: 90.0,
+    performance: 70.0,
+    security: 60.0,
+  },
   breakdown: {
     maintainability: 'Good modular structure',
     testability: 'Some dependencies need injection',
     readability: 'Excellent naming and comments',
     performance: 'Algorithm could be optimized',
-    security: 'Input validation needed'
-  }
+    security: 'Input validation needed',
+  },
 };
 
 const mockArchitectureData = {
@@ -117,38 +119,6 @@ const mockArchitectureData = {
   layout: 'horizontal'
 };
 
-const mockMentorInsightData = {
-  skill_level: 'intermediate',
-  strengths: ['Good code organization', 'Proper error handling'],
-  weaknesses: ['Security awareness', 'Testing practices'],
-  learning_path: [
-    {
-      title: 'Security Best Practices',
-      description: 'Learn about common security vulnerabilities',
-      resources: ['https://owasp.org/', 'Security Handbook'],
-      estimated_time: '2 hours',
-      difficulty: 'intermediate',
-      prerequisites: ['Basic programming knowledge'],
-      learning_objectives: ['Identify security issues', 'Implement secure coding'],
-      practical_exercises: ['Code review exercise', 'Security audit practice']
-    }
-  ],
-  challenges: [
-    {
-      title: 'Build Secure API',
-      description: 'Create an API with proper security measures',
-      difficulty: 'intermediate',
-      estimated_time: '1 week',
-      skills_practiced: ['security', 'API design'],
-      starter_code: '// TODO: implement secure endpoints',
-      success_criteria: ['Passes security audit', 'Handles edge cases'],
-      hints: ['Use input validation', 'Implement rate limiting']
-    }
-  ],
-  estimated_time: '2-4 weeks',
-  next_milestone: 'Master security best practices',
-  career_advice: 'Focus on security certifications'
-};
 
 describe('CodeReview Component', () => {
   beforeEach(() => {
@@ -226,19 +196,21 @@ describe('QualityMetrics Component', () => {
     jest.clearAllMocks();
   });
 
-  test('renders quality metrics component', () => {
+  test('renders health score component', () => {
     render(
       <TestWrapper>
         <QualityMetrics repositoryId={1} fileId={1} />
       </TestWrapper>
     );
 
-    expect(screen.getByText('Calculate Quality Metrics')).toBeInTheDocument();
-    expect(screen.getByText('5-dimensional code quality assessment with detailed scoring and explanations.')).toBeInTheDocument();
+    expect(screen.getByText('Calculate Health Score')).toBeInTheDocument();
+    expect(screen.getByText('Single score with detailed breakdown')).toBeInTheDocument();
   });
 
-  test('calculates quality metrics on button click', async () => {
-    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce(mockQualityMetricsData);
+  test('calculates health score on button click', async () => {
+    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce({
+      health_score: mockHealthScoreData,
+    });
 
     render(
       <TestWrapper>
@@ -246,7 +218,7 @@ describe('QualityMetrics Component', () => {
       </TestWrapper>
     );
 
-    const calculateButton = screen.getByText('Calculate Quality Metrics');
+    const calculateButton = screen.getByText('Calculate Health Score');
     fireEvent.click(calculateButton);
 
     await waitFor(() => {
@@ -254,8 +226,10 @@ describe('QualityMetrics Component', () => {
     });
   });
 
-  test('displays quality metrics with progress indicators', async () => {
-    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce(mockQualityMetricsData);
+  test('displays health score with grade', async () => {
+    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce({
+      health_score: mockHealthScoreData,
+    });
 
     render(
       <TestWrapper>
@@ -263,21 +237,20 @@ describe('QualityMetrics Component', () => {
       </TestWrapper>
     );
 
-    const calculateButton = screen.getByText('Calculate Quality Metrics');
+    const calculateButton = screen.getByText('Calculate Health Score');
     fireEvent.click(calculateButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Maintainability')).toBeInTheDocument();
-      expect(screen.getByText('Testability')).toBeInTheDocument();
-      expect(screen.getByText('Readability')).toBeInTheDocument();
-      expect(screen.getByText('Performance')).toBeInTheDocument();
-      expect(screen.getByText('Security')).toBeInTheDocument();
-      expect(screen.getByText('73.0')).toBeInTheDocument(); // Overall score
+      expect(screen.getByText('Health Score')).toBeInTheDocument();
+      expect(screen.getByText('Grade C')).toBeInTheDocument();
+      expect(screen.getByText('78.5')).toBeInTheDocument();
     });
   });
 
-  test('expands metric details on click', async () => {
-    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce(mockQualityMetricsData);
+  test('shows detailed breakdown on toggle', async () => {
+    mockApiClient.calculateQualityMetrics.mockResolvedValueOnce({
+      health_score: mockHealthScoreData,
+    });
 
     render(
       <TestWrapper>
@@ -285,13 +258,12 @@ describe('QualityMetrics Component', () => {
       </TestWrapper>
     );
 
-    const calculateButton = screen.getByText('Calculate Quality Metrics');
+    const calculateButton = screen.getByText('Calculate Health Score');
     fireEvent.click(calculateButton);
 
     await waitFor(() => {
-      const maintainabilityCard = screen.getByText('Maintainability');
-      fireEvent.click(maintainabilityCard);
-
+      const toggleButton = screen.getByText('View detailed breakdown');
+      fireEvent.click(toggleButton);
       expect(screen.getByText('Good modular structure')).toBeInTheDocument();
     });
   });
@@ -369,71 +341,6 @@ describe('ArchitectureDiagram Component', () => {
   });
 });
 
-describe('MentorHint Component', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('renders mentor hint component', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    // Component should be visible after delay
-    expect(screen.getByText('Learning Suggestions')).toBeInTheDocument();
-  });
-
-  test('shows learning suggestions', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    expect(screen.getByText('Async/Await Patterns')).toBeInTheDocument();
-    expect(screen.getByText('Error Handling Best Practices')).toBeInTheDocument();
-    expect(screen.getByText('Unit Testing Strategies')).toBeInTheDocument();
-  });
-
-  test('can be dismissed', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    const dismissButton = screen.getByLabelText('Dismiss');
-    fireEvent.click(dismissButton);
-
-    expect(screen.queryByText('Learning Suggestions')).not.toBeInTheDocument();
-  });
-
-  test('can be minimized', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    const minimizeButton = screen.getByLabelText('Minimize');
-    fireEvent.click(minimizeButton);
-
-    expect(screen.getByText('3 learning suggestions available')).toBeInTheDocument();
-  });
-
-  test('links to mentor dashboard', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    const mentorLink = screen.getByText('View Full Learning Path');
-    expect(mentorLink.closest('a')).toHaveAttribute('href', '/mentor');
-  });
-});
 
 describe('API Integration', () => {
   test('handles network errors gracefully', async () => {
@@ -503,30 +410,17 @@ describe('Component Accessibility', () => {
     expect(generateButton).toHaveAttribute('type', 'button');
   });
 
-  test('quality metrics component has proper accessibility', () => {
+  test('health score component has proper accessibility', () => {
     render(
       <TestWrapper>
         <QualityMetrics repositoryId={1} fileId={1} />
       </TestWrapper>
     );
 
-    const calculateButton = screen.getByText('Calculate Quality Metrics');
+    const calculateButton = screen.getByText('Calculate Health Score');
     expect(calculateButton).toHaveAttribute('type', 'button');
   });
 
-  test('mentor hint component has proper ARIA labels', () => {
-    render(
-      <TestWrapper>
-        <MentorHint repositoryId={1} fileId={1} />
-      </TestWrapper>
-    );
-
-    const dismissButton = screen.getByLabelText('Dismiss');
-    const minimizeButton = screen.getByLabelText('Minimize');
-    
-    expect(dismissButton).toBeInTheDocument();
-    expect(minimizeButton).toBeInTheDocument();
-  });
 });
 
 describe('Performance Optimization', () => {

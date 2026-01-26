@@ -3,9 +3,8 @@ Comprehensive tests for AI-powered code analysis features.
 
 Tests:
 - Code Review (security, performance, best practices)
-- Quality Metrics (5-dimensional scoring)
+- Health Score (5-dimensional breakdown)
 - Architecture Diagrams (component extraction)
-- Mentor Insights (skill assessment & learning paths)
 
 Run with: python test_code_analysis_features.py
 """
@@ -260,15 +259,15 @@ class CodeAnalysisTester:
         response_data = metrics_response.json()
         print_success("Quality metrics calculated successfully")
         
-        # Extract the actual quality metrics data from the response wrapper
-        if "quality_metrics" not in response_data:
-            print_error("Missing 'quality_metrics' field in response")
+        # Extract the actual health score data from the response wrapper
+        if "health_score" not in response_data:
+            print_error("Missing 'health_score' field in response")
             return False
         
-        metrics_data = response_data["quality_metrics"]
+        metrics_data = response_data["health_score"]
         
         # Validate response structure
-        required_fields = ["maintainability", "testability", "readability", "performance", "security", "overall", "breakdown"]
+        required_fields = ["score", "grade", "summary", "metrics", "breakdown"]
         for field in required_fields:
             if field not in metrics_data:
                 print_error(f"Missing required field: {field}")
@@ -277,21 +276,17 @@ class CodeAnalysisTester:
         print_success("Response structure validated")
         
         # Display results
-        metrics = ["maintainability", "testability", "readability", "performance", "security"]
-        for metric in metrics:
-            score = metrics_data[metric]
+        print_info(f"Health Score: {metrics_data['score']}/100")
+        print_info(f"Grade: {metrics_data['grade']}")
+        for metric, score in metrics_data["metrics"].items():
             print_info(f"{metric.capitalize()}: {score}/100")
         
-        print_info(f"Overall Score: {metrics_data['overall']}/100")
-        
         # Validate score ranges
-        for metric in metrics + ["overall"]:
-            score = metrics_data[metric]
-            if not isinstance(score, (int, float)) or score < 0 or score > 100:
-                print_error(f"Invalid score for {metric}: {score}")
-                return False
+        if not isinstance(metrics_data["score"], (int, float)) or metrics_data["score"] < 0 or metrics_data["score"] > 100:
+            print_error(f"Invalid health score: {metrics_data['score']}")
+            return False
         
-        print_success("All scores within valid range (0-100)")
+        print_success("Health score within valid range (0-100)")
         
         return True
     
@@ -362,109 +357,6 @@ class CodeAnalysisTester:
         
         return True
     
-    async def test_mentor_insights(self):
-        """Test mentor insights generation"""
-        print_step("5️⃣  Testing Mentor Insights")
-        
-        if not self.repo_id or not self.file_id:
-            print_error("No repository or file available for testing")
-            return False
-        
-        # Generate mentor insights
-        mentor_response = requests.post(
-            f"{BASE_URL}/code-analysis/repositories/{self.repo_id}/files/{self.file_id}/mentor",
-            headers=self.headers
-        )
-        
-        if mentor_response.status_code != 200:
-            print_error(f"Mentor insights failed: {mentor_response.status_code}")
-            return False
-        
-        response_data = mentor_response.json()
-        print_success("Mentor insights generated successfully")
-        
-        # Extract the actual mentor insights data from the response wrapper
-        if "mentor_insights" not in response_data:
-            print_error("Missing 'mentor_insights' field in response")
-            return False
-        
-        mentor_data = response_data["mentor_insights"]
-        
-        # Validate response structure
-        required_fields = ["skill_level", "strengths", "weaknesses", "learning_path", "challenges", "estimated_time", "next_milestone"]
-        for field in required_fields:
-            if field not in mentor_data:
-                print_error(f"Missing required field: {field}")
-                return False
-        
-        print_success("Response structure validated")
-        
-        # Display results
-        print_info(f"Skill Level: {mentor_data['skill_level']}")
-        print_info(f"Strengths: {len(mentor_data['strengths'])} identified")
-        print_info(f"Weaknesses: {len(mentor_data['weaknesses'])} identified")
-        print_info(f"Learning Path: {len(mentor_data['learning_path'])} modules")
-        print_info(f"Challenges: {len(mentor_data['challenges'])} exercises")
-        print_info(f"Estimated Time: {mentor_data['estimated_time']}")
-        
-        # Validate skill level
-        valid_levels = ["beginner", "intermediate", "advanced"]
-        if mentor_data['skill_level'] not in valid_levels:
-            print_error(f"Invalid skill level: {mentor_data['skill_level']}")
-            return False
-        
-        print_success("Skill level validation passed")
-        
-        # Show sample learning path item
-        if mentor_data['learning_path']:
-            item = mentor_data['learning_path'][0]
-            print_info(f"  Sample learning: {item.get('title', 'N/A')}")
-        
-        return True
-    
-    async def test_batch_analysis(self):
-        """Test batch analysis functionality"""
-        print_step("6️⃣  Testing Batch Analysis")
-        
-        if not self.repo_id:
-            print_error("No repository available for testing")
-            return False
-        
-        # Request batch analysis
-        batch_request = {
-            "analysis_types": ["code_review", "quality_metrics", "architecture_diagram", "mentor_insights"],
-            "include_summary": True
-        }
-        
-        batch_response = requests.post(
-            f"{BASE_URL}/code-analysis/repositories/{self.repo_id}/analyze-all",
-            headers=self.headers,
-            json=batch_request
-        )
-        
-        if batch_response.status_code != 200:
-            print_error(f"Batch analysis failed: {batch_response.status_code}")
-            return False
-        
-        batch_data = batch_response.json()
-        print_success("Batch analysis completed successfully")
-        
-        # Validate response structure
-        required_fields = ["results", "processing_time", "cached_counts"]
-        for field in required_fields:
-            if field not in batch_data:
-                print_error(f"Missing required field: {field}")
-                return False
-        
-        print_success("Response structure validated")
-        
-        # Display results
-        print_info(f"Processing Time: {batch_data['processing_time']:.2f}s")
-        print_info(f"Cached Results: {batch_data['cached_counts']}")
-        print_info(f"Analysis Types: {list(batch_data['results'].keys())}")
-        
-        return True
-    
     async def run_all_tests(self):
         """Run all code analysis tests"""
         print_header("AI Code Analysis Features Test Suite")
@@ -478,9 +370,7 @@ class CodeAnalysisTester:
         tests = [
             self.test_code_review,
             self.test_quality_metrics,
-            self.test_architecture_diagram,
-            self.test_mentor_insights,
-            self.test_batch_analysis
+            self.test_architecture_diagram
         ]
         
         passed = 0
@@ -505,8 +395,6 @@ class CodeAnalysisTester:
             print_success("AI Code Review (security, performance, best practices)")
             print_success("Quality Metrics (5-dimensional scoring)")
             print_success("Architecture Diagrams (component extraction)")
-            print_success("Mentor Insights (skill assessment & learning paths)")
-            print_success("Batch Analysis (multiple analyses at once)")
             
             print(f"\n{Colors.BOLD}Technical Validation:{Colors.END}")
             print_success("API endpoints responding correctly")

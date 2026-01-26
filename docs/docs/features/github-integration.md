@@ -24,7 +24,7 @@ GitHub Integration offers:
 ### Pull Request Integration
 - **Automated Reviews**: AI-powered code reviews on every PR
 - **Documentation Updates**: Automatically update documentation for changed code
-- **Quality Metrics**: Track code quality improvements over time
+- **Health Score**: Track code quality improvements over time
 - **Comment Integration**: Post analysis results as PR comments
 - **Status Checks**: Add analysis results as required status checks
 

@@ -6,7 +6,13 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['Outfit', 'system-ui', 'sans-serif'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        page: '#fafaf9',
+      },
         // Modern Minimalist Palette (OpenAI/Claude style)
         // Base: White + Charcoal for high contrast
         charcoal: {
@@ -49,18 +55,18 @@ export default {
           800: '#002966',
           900: '#001433',
         },
-        // Accent colors (purple variant)
+        // Accent (YC-style: slate, no purple)
         accent: {
-          50: '#F3E8FF',
-          100: '#E9D5FF',
-          200: '#D8B4FE',
-          300: '#C084FC',
-          400: '#A855F7',
-          500: '#9333EA',
-          600: '#7E22CE',
-          700: '#6B21A8',
-          800: '#581C87',
-          900: '#4C1D95',
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
         },
         // Keep some utility colors
         success: {
@@ -110,7 +116,6 @@ export default {
         },
       },
       animation: {
-        'gradient-x': 'gradient-x 3s ease infinite',
         'float': 'float 3s ease-in-out infinite',
         'float-slow': 'float-slow 8s ease-in-out infinite',
         'float-slower': 'float-slower 12s ease-in-out infinite',
@@ -143,6 +148,16 @@ export default {
         'slide-up': {
           'from': {
             transform: 'translateY(100%)',
+            opacity: '0'
+          },
+          'to': {
+            transform: 'translateY(0)',
+            opacity: '1'
+          }
+        },
+        'stagger-in': {
+          'from': {
+            transform: 'translateY(12px)',
             opacity: '0'
           },
           'to': {

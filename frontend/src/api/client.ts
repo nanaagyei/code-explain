@@ -14,23 +14,17 @@ import type {
   Repository,
   CodeFile,
   FileDocumentation,
+  StartHereSummary,
   PromptTemplate,
   PromptTemplateCreate,
   PromptTemplateUpdate,
   UserApiKey,
   UserApiKeyCreate,
   UserApiKeyUpdate,
-  BatchJob,
-  BatchJobCreate,
-  BatchJobUpdate,
-  BatchJobSummary,
-  BatchJobStats,
   CodeReviewResponse,
   QualityMetricsResponse,
   ArchitectureDiagramResponse,
-  MentorInsightsResponse,
-  BatchAnalysisRequest,
-  BatchAnalysisResponse,
+  TraceFileResponse,
   CreditPack,
   BillingSummary,
   CreditTransaction,
@@ -154,8 +148,22 @@ class ApiClient {
     return response.data;
   }
 
-  async getRepository(id: number): Promise<{ repository: Repository; files: CodeFile[] }> {
+  async getRepository(id: number): Promise<{ repository: Repository; files: CodeFile[]; start_here?: StartHereSummary }> {
     const response = await this.client.get(`/repositories/${id}`);
+    return response.data;
+  }
+
+  async getGoodFirstIssues(repositoryId: number): Promise<Array<{
+    number: number;
+    title: string;
+    body: string;
+    url: string;
+    labels: string[];
+    created_at: string;
+    updated_at: string;
+    comments: number;
+  }>> {
+    const response = await this.client.get(`/repositories/${repositoryId}/good-first-issues`);
     return response.data;
   }
 
@@ -173,10 +181,21 @@ class ApiClient {
     await this.client.delete(`/repositories/${id}`);
   }
 
+  async markRepositoryFailed(id: number): Promise<void> {
+    await this.client.post(`/repositories/${id}/mark-failed`);
+  }
+
   async exportDocumentation(repositoryId: number, fileId: number, format: string = 'markdown'): Promise<Blob> {
     const response = await this.client.get(
       `/repositories/${repositoryId}/files/${fileId}/export?format=${format}`,
       { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  async getFileTrace(repositoryId: number, fileId: number): Promise<TraceFileResponse> {
+    const response = await this.client.get<TraceFileResponse>(
+      `/repositories/${repositoryId}/files/${fileId}/trace`
     );
     return response.data;
   }
@@ -252,45 +271,6 @@ class ApiClient {
     return response.data;
   }
 
-  // ========== Batch Jobs ==========
-  
-  async getBatchJobs(status?: string): Promise<BatchJobSummary[]> {
-    const params = new URLSearchParams();
-    if (status) params.append('status_filter', status);
-    
-    const response = await this.client.get<BatchJobSummary[]>(`/batch-jobs/?${params.toString()}`);
-    return response.data;
-  }
-
-  async getBatchJob(id: number): Promise<BatchJob> {
-    const response = await this.client.get<BatchJob>(`/batch-jobs/${id}`);
-    return response.data;
-  }
-
-  async createBatchJob(batchJob: BatchJobCreate): Promise<BatchJob> {
-    const response = await this.client.post<BatchJob>('/batch-jobs/', batchJob);
-    return response.data;
-  }
-
-  async updateBatchJob(id: number, batchJob: BatchJobUpdate): Promise<BatchJob> {
-    const response = await this.client.put<BatchJob>(`/batch-jobs/${id}`, batchJob);
-    return response.data;
-  }
-
-  async deleteBatchJob(id: number): Promise<void> {
-    await this.client.delete(`/batch-jobs/${id}`);
-  }
-
-  async cancelBatchJob(id: number): Promise<BatchJob> {
-    const response = await this.client.post<BatchJob>(`/batch-jobs/${id}/cancel`);
-    return response.data;
-  }
-
-  async getBatchJobStats(): Promise<BatchJobStats> {
-    const response = await this.client.get<BatchJobStats>('/batch-jobs/stats');
-    return response.data;
-  }
-
   // ========== Billing ==========
 
   async getCreditPacks(): Promise<CreditPack[]> {
@@ -332,13 +312,123 @@ class ApiClient {
     return response.data;
   }
 
-  async generateMentorInsights(repoId: number, fileId: number): Promise<MentorInsightsResponse> {
-    const response = await this.client.post(`/code-analysis/repositories/${repoId}/files/${fileId}/mentor`);
+  // ========== Chat / Explain ==========
+  
+  async explainFunction(
+    code: string,
+    name: string,
+    context?: string,
+    language: string = 'python'
+  ): Promise<ReadableStream<Uint8Array>> {
+    const response = await fetch(`${API_BASE_URL}/chat/explain-function`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify({ code, name, context, language }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to explain function');
+    }
+    
+    return response.body!;
+  }
+
+  // ========== Explorations ==========
+
+  async saveExploration(
+    repositoryId: number,
+    title: string,
+    description?: string,
+    state?: Record<string, unknown>
+  ): Promise<{ id: number; share_id: string; title: string; share_url: string }> {
+    const formData = new FormData();
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+    if (state) formData.append('state', JSON.stringify(state));
+    
+    const response = await this.client.post(`/repositories/${repositoryId}/explorations`, formData);
     return response.data;
   }
 
-  async batchAnalyzeRepository(repoId: number, request: BatchAnalysisRequest): Promise<BatchAnalysisResponse> {
-    const response = await this.client.post(`/code-analysis/repositories/${repoId}/analyze-all`, request);
+  async getSharedExploration(shareId: string): Promise<{
+    id: number;
+    title: string;
+    description?: string;
+    state?: Record<string, unknown>;
+    view_count: number;
+    created_at: string;
+    repository: { id: number; name: string };
+  }> {
+    const response = await this.client.get(`/repositories/explore/${shareId}`);
+    return response.data;
+  }
+
+  async listExplorations(repositoryId: number): Promise<Array<{
+    id: number;
+    share_id: string;
+    title: string;
+    description?: string;
+    view_count: number;
+    created_at: string;
+    share_url: string;
+  }>> {
+    const response = await this.client.get(`/repositories/${repositoryId}/explorations`);
+    return response.data;
+  }
+
+  async compareRepositories(repo1Id: number, repo2Id: number): Promise<{
+    repo1: { id: number; name: string };
+    repo2: { id: number; name: string };
+    comparison: {
+      overview: string;
+      similarities: string[];
+      differences: string[];
+      architecture_comparison: string;
+      complexity_comparison: string;
+      recommendations: string[];
+      learning_opportunities: string;
+    };
+    tokens_used: number;
+  }> {
+    const formData = new FormData();
+    formData.append('repo1_id', repo1Id.toString());
+    formData.append('repo2_id', repo2Id.toString());
+    const response = await this.client.post('/repositories/compare', formData);
+    return response.data;
+  }
+
+  async explainChangelog(repositoryId: number, changelog: string): Promise<{
+    repository: string;
+    explanation: {
+      summary: string;
+      major_changes: Array<{ title: string; description: string; impact: string }>;
+      breaking_changes: string[];
+      new_features: string[];
+      bug_fixes: string[];
+      recommendations: string[];
+    };
+    tokens_used: number;
+  }> {
+    const formData = new FormData();
+    formData.append('changelog', changelog);
+    const response = await this.client.post(`/repositories/${repositoryId}/explain-changelog`, formData);
+    return response.data;
+  }
+
+  async generatePRChecklist(repositoryId: number): Promise<{
+    repository: string;
+    checklist: {
+      checklist: Array<{ item: string; category: string; priority: string }>;
+      potential_issues: string[];
+      suggested_reviewers: string[];
+      estimated_review_complexity: string;
+    };
+    tokens_used: number;
+  }> {
+    const response = await this.client.post(`/repositories/${repositoryId}/pr-checklist`);
     return response.data;
   }
 

@@ -132,46 +132,6 @@ Content-Type: application/json
 }
 ```
 
-### AI Mentor
-
-#### Ask AI Mentor
-Get AI-powered code suggestions and explanations.
-
-```http
-POST /mentor/ask
-Content-Type: application/json
-
-{
-  "question": "How can I improve the performance of this React component?",
-  "code_context": "const MyComponent = () => { ... }",
-  "language": "typescript",
-  "context": {
-    "framework": "react",
-    "experience_level": "intermediate"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "answer": "Here are several ways to improve your React component performance...",
-  "suggestions": [
-    {
-      "type": "optimization",
-      "code": "const MyComponent = React.memo(() => { ... })",
-      "explanation": "Using React.memo prevents unnecessary re-renders"
-    }
-  ],
-  "resources": [
-    {
-      "title": "React Performance Optimization",
-      "url": "https://react.dev/learn/render-and-commit"
-    }
-  ]
-}
-```
-
 ### Documentation Generation
 
 #### Generate Documentation
@@ -200,46 +160,6 @@ Content-Type: application/json
     "return_type": "number",
     "complexity": "O(n)"
   }
-}
-```
-
-### Bulk Operations
-
-#### Bulk Analysis
-Analyze multiple files or repositories in a single request.
-
-```http
-POST /analyze/bulk
-Content-Type: application/json
-
-{
-  "items": [
-    {
-      "type": "file",
-      "path": "src/utils/helper.ts",
-      "content": "..."
-    },
-    {
-      "type": "repository",
-      "url": "https://github.com/user/repo",
-      "branch": "main"
-    }
-  ],
-  "options": {
-    "parallel": true,
-    "max_concurrent": 5
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "bulk_analysis_id": "uuid",
-  "status": "processing",
-  "total_items": 2,
-  "completed_items": 0,
-  "results": []
 }
 ```
 

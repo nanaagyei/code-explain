@@ -1,11 +1,17 @@
 # Quick Start
 
-Get up and running with CodeExplain in just a few minutes! This guide will walk you through creating your first AI-powered code documentation.
+Get up and running with CodeXplain in just a few minutes! This guide will walk you through creating your first AI-powered code documentation.
 
-## Step 1: Access CodeExplain
+## Step 1: Access CodeXplain
 
-1. Open your browser and navigate to `http://localhost:3000`
-2. You'll see the CodeExplain welcome page
+1. Open your browser and navigate to `http://localhost:3000` (or your deployed app URL).
+2. You'll see the CodeXplain welcome page.
+
+### Sign in or sign up
+
+Use the login page to sign in or create an account:
+
+![CodeXplain login](/login.png)
 
 ## Step 2: Create Your Account
 
@@ -23,7 +29,7 @@ Get up and running with CodeExplain in just a few minutes! This guide will walk 
 1. Click **"New Repository"** on the dashboard
 2. Fill in repository details:
    - **Name**: `my-first-project`
-   - **Description**: `Learning CodeExplain with a sample project`
+   - **Description**: `Learning CodeXplain with a sample project`
    - **Language**: Select your primary language
 3. Click **"Create Repository"**
 
@@ -45,23 +51,20 @@ Get up and running with CodeExplain in just a few minutes! This guide will walk 
 
 ### Supported File Types
 
-CodeExplain supports a wide range of programming languages:
+CodeXplain focuses on deep support for core languages:
 
-- **Web**: `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.css`, `.scss`
-- **Python**: `.py`, `.pyx`
-- **Java**: `.java`, `.kt`
-- **C/C++**: `.c`, `.cpp`, `.h`, `.hpp`
+- **JavaScript/TypeScript**: `.js`, `.jsx`, `.ts`, `.tsx`
+- **Python**: `.py`
+- **Java**: `.java`
+- **C/C++**: `.c`, `.h`, `.cpp`, `.hpp`
 - **Go**: `.go`
 - **Rust**: `.rs`
-- **PHP**: `.php`
-- **Ruby**: `.rb`
-- **And many more!**
 
 ## Step 5: Generate AI Documentation
 
 ### Automatic Documentation
 
-1. Once files are uploaded, CodeExplain will automatically:
+1. Once files are uploaded, CodeXplain will automatically:
    - Parse your code structure
    - Generate comprehensive documentation
    - Analyze code quality
@@ -73,7 +76,7 @@ CodeExplain supports a wide range of programming languages:
 2. You'll see the **File Documentation** page with tabs:
    - **Documentation**: AI-generated documentation
    - **Code Review**: Security and performance analysis
-   - **Quality Score**: 5-dimensional quality metrics
+   - **Health Score**: Single score with detailed breakdown
    - **Architecture**: Interactive code structure diagram
 
 ## Step 6: Explore AI Features
@@ -87,11 +90,11 @@ CodeExplain supports a wide range of programming languages:
    - **Performance Issues**: Optimization suggestions
    - **Best Practices**: Code improvement recommendations
 
-### Quality Metrics
+### Health Score
 
-1. Click the **"Quality Score"** tab
-2. Click **"Calculate Metrics"** to get quality scores
-3. View your scores:
+1. Click the **"Health Score"** tab
+2. Click **"Calculate Health Score"** to get your score
+3. Review the breakdown:
    - **Maintainability**: Code structure and modularity
    - **Testability**: How easy it is to test
    - **Readability**: Code clarity and documentation
@@ -108,39 +111,7 @@ CodeExplain supports a wide range of programming languages:
    - **Zoom/Pan**: Navigate the diagram
    - **Export**: Save as PNG or SVG
 
-## Step 7: AI Mentor Dashboard
-
-### Access Mentor Features
-
-1. Click **"AI Mentor"** in the navigation
-2. Explore your personalized dashboard:
-   - **Skill Assessment**: Your current skill level
-   - **Learning Path**: Recommended next steps
-   - **Challenges**: Practice exercises
-   - **Progress Tracking**: Your improvement over time
-
-### Get Personalized Insights
-
-1. The AI Mentor analyzes your code patterns
-2. Provides skill-level assessment
-3. Suggests learning paths based on your code
-4. Recommends challenges to improve your skills
-
-## Step 8: Bulk Operations
-
-### Process Multiple Repositories
-
-1. Go to the **Dashboard**
-2. Click **"Bulk Operations"**
-3. Select multiple repositories
-4. Choose analysis types:
-   - Code Review
-   - Quality Metrics
-   - Architecture Diagrams
-   - Mentor Insights
-5. Click **"Start Batch Processing"**
-
-## Step 9: Customize Your Experience
+## Step 7: Customize Your Experience
 
 ### Custom AI Prompts
 
@@ -157,7 +128,7 @@ CodeExplain supports a wide range of programming languages:
 2. Add your OpenAI API key for enhanced features
 3. Configure usage limits and monitoring
 
-## Step 10: Export and Share
+## Step 8: Export and Share
 
 ### Export Documentation
 
@@ -176,7 +147,7 @@ CodeExplain supports a wide range of programming languages:
 
 ## Example: Python Function Documentation
 
-Here's what CodeExplain generates for a simple Python function:
+Here's what CodeXplain generates for a simple Python function:
 
 **Input Code:**
 ```python
@@ -230,16 +201,15 @@ Uses recursive approach with base cases for n <= 1.
 
 ### 3. Regular Updates
 - Re-generate documentation when code changes
-- Use bulk operations for large codebases
 - Monitor quality metrics over time
 
 ## Next Steps
 
 Now that you've created your first documentation:
 
-1. **[Configuration Guide](./configuration.md)** - Customize CodeExplain for your needs
+1. **[Configuration Guide](./configuration.md)** — Customize CodeXplain for your needs
 2. **[Features Overview](/docs/features/ai-documentation)** - Explore all available features
-3. **[API Reference](/docs/api/backend-api)** - Integrate CodeExplain into your workflow
+3. **[API Reference](/docs/api/backend-api)** — Integrate CodeXplain into your workflow
 
 ## Getting Help
 
@@ -250,4 +220,4 @@ Now that you've created your first documentation:
 
 ---
 
-**Congratulations!** You've successfully created your first AI-powered code documentation with CodeExplain. The platform is now ready to help you document, analyze, and improve your code with the power of artificial intelligence.
+**Congratulations!** You've successfully created your first AI-powered code documentation with CodeXplain. The platform is now ready to help you document, analyze, and improve your code with the power of artificial intelligence.

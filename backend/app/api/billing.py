@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 from typing import List
 
@@ -24,6 +25,7 @@ from app.services.billing_service import BillingService
 
 
 router = APIRouter(prefix="/billing", tags=["billing"])
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -182,17 +184,16 @@ async def stripe_webhook(
             settings.stripe_webhook_secret,
         )
     except ValueError as exc:
+        logger.warning("Stripe webhook verification failed: invalid payload")
         raise HTTPException(status_code=400, detail="Invalid payload") from exc
     except stripe.error.SignatureVerificationError as exc:  # type: ignore[attr-defined]
+        logger.warning("Stripe webhook verification failed: invalid signature")
         raise HTTPException(status_code=400, detail="Invalid signature") from exc
 
     billing = BillingService(db)
 
     if event["type"] == "checkout.session.completed":
         session_obj = event["data"]["object"]
-        metadata = session_obj.get("metadata", {}) or {}
-        user_id = metadata.get("user_id")
-        pack_id = metadata.get("credit_pack_id")
 
         stored_session, updated = await billing.mark_checkout_completed(
             stripe_session_id=session_obj["id"],
@@ -200,27 +201,19 @@ async def stripe_webhook(
             raw_payload=session_obj,
         )
 
-        if updated and user_id and pack_id:
-            try:
-                user_id_int = int(user_id)
-                pack_id_int = int(pack_id)
-            except (TypeError, ValueError):
-                user_id_int = None
-                pack_id_int = None
-
-            if user_id_int and pack_id_int:
-                pack = await billing.get_credit_pack(pack_id_int)
-                if pack:
-                    await billing.deposit_credits(
-                        user_id=user_id_int,
-                        credits=pack.credits,
-                        description=f"Stripe purchase - {pack.name}",
-                        source="stripe_checkout",
-                        extra_metadata={
-                            "stripe_session_id": session_obj["id"],
-                            "payment_intent": session_obj.get("payment_intent"),
-                        },
-                    )
+        if updated and stored_session and stored_session.credit_pack_id:
+            pack = await billing.get_credit_pack(stored_session.credit_pack_id)
+            if pack:
+                await billing.deposit_credits(
+                    user_id=stored_session.user_id,
+                    credits=pack.credits,
+                    description=f"Stripe purchase - {pack.name}",
+                    source="stripe_checkout",
+                    extra_metadata={
+                        "stripe_session_id": session_obj["id"],
+                        "payment_intent": session_obj.get("payment_intent"),
+                    },
+                )
 
     return JSONResponse({"received": True})
 

@@ -93,7 +93,7 @@ BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
 
 - Configure these values to enable prepaid credit packs backed by Stripe Checkout
 - `BILLING_TOKENS_PER_CREDIT` controls how many OpenAI tokens equal one credit
-- Webhook secret is required so deposits happen automatically after checkout completes
+- Webhook secret is required so deposits happen automatically after checkout completes. For local dev with `stripe listen`, use the CLI-printed secret; for production, use the Dashboard webhook secret.
 
 ## Frontend Configuration
 

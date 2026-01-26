@@ -1,10 +1,10 @@
-# Quality Metrics
+# Health Score
 
-CodeExplain's Quality Metrics feature provides a comprehensive 5-dimensional scoring system that evaluates your code across multiple quality dimensions, giving you actionable insights for improvement.
+CodeExplain's Health Score provides a single headline score with a detailed 5-dimensional breakdown that evaluates your code across key quality dimensions.
 
 ## Overview
 
-The Quality Metrics feature analyzes your code and provides scores for:
+The Health Score analyzes your code and provides scores for:
 
 - **Maintainability**: How easy it is to modify and extend
 - **Testability**: How well the code can be tested
@@ -129,18 +129,18 @@ The Quality Metrics feature analyzes your code and provides scores for:
 - Avoid hardcoded secrets
 - Follow OWASP guidelines
 
-## Using Quality Metrics
+## Using Health Score
 
 ### 1. Generate Metrics
 
 1. Navigate to any file in your repository
-2. Click the **"Quality Score"** tab
-3. Click **"Calculate Metrics"** button
+2. Click the **"Health Score"** tab
+3. Click **"Calculate Health Score"** button
 4. Wait for analysis to complete (usually 3-10 seconds)
 
 ### 2. View Results
 
-The metrics are displayed as circular progress indicators:
+The health score is displayed prominently with an expandable breakdown:
 
 ```markdown
 Quality Metrics Dashboard
@@ -170,7 +170,7 @@ Security: 80/100
    - Secure authentication
    - Add rate limiting for API endpoints
 
-Overall Score: 74/100
+Health Score: 74/100
 ```
 
 ### 3. Detailed Breakdown

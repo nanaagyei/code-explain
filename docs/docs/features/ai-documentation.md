@@ -11,6 +11,7 @@ The AI Documentation feature analyzes your code and generates:
 - README files
 - Architecture overviews
 - Code examples and usage guides
+- A "Start Here" guide for first-time contributors
 
 ## Key Features
 

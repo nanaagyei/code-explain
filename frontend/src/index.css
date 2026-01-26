@@ -2,22 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background-color: #fafaf9;
+    color: #171717;
+  }
+}
+
 /* Custom animations and styles */
 @layer utilities {
-  .animate-gradient-x {
-    animation: gradient-x 3s ease infinite;
-    background-size: 200% 200%;
-  }
-  
-  @keyframes gradient-x {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-  
   .animate-shake {
     animation: shake 0.5s;
   }
@@ -73,12 +67,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  background: #94a3b8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+  background: #64748b;
 }
 
 /* Code block styling */

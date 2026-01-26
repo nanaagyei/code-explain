@@ -13,7 +13,7 @@ from app.core.security import (
 )
 from app.core.config import get_settings
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import UserCreate, UserResponse, Token, TokenWithUser
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 settings = get_settings()
@@ -119,20 +119,20 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return db_user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenWithUser)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Login and get JWT access token.
+    Login and get JWT access token with user data.
     
     Args:
         form_data: OAuth2 form with username and password
         db: Database session
         
     Returns:
-        JWT access token
+        JWT access token and user information
         
     Raises:
         HTTPException: If credentials are invalid
@@ -164,7 +164,11 @@ async def login(
         expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user)
+    }
 
 
 @router.get("/me", response_model=UserResponse)

@@ -5,8 +5,6 @@ Provides endpoints for:
 - Code Review generation
 - Quality Metrics calculation
 - Architecture Diagram creation
-- Mentor Insights generation
-- Batch analysis operations
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,9 +17,11 @@ from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.repository import Repository, CodeFile
 from app.schemas.code_analysis import (
-    CodeReviewResponse, QualityMetricsResponse, ArchitectureDiagramResponse,
-    MentorInsightsResponse, BatchAnalysisRequest, BatchAnalysisResponse
+    CodeReviewResponse, HealthScoreResponse, ArchitectureDiagramResponse,
+    QuickFileAnalysisRequest, QuickFileAnalysisResponse
 )
+from app.services.code_parser import CodeParser
+from app.services.ai_service import AIDocumentationService
 from app.services.code_analysis_service import get_code_analysis_service
 
 router = APIRouter(prefix="/code-analysis", tags=["code-analysis"])
@@ -110,7 +110,7 @@ async def generate_code_review(
         )
 
 
-@router.post("/repositories/{repo_id}/files/{file_id}/quality", response_model=QualityMetricsResponse)
+@router.post("/repositories/{repo_id}/files/{file_id}/quality", response_model=HealthScoreResponse)
 async def calculate_quality_metrics(
     repo_id: int,
     file_id: int,
@@ -118,9 +118,10 @@ async def calculate_quality_metrics(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Calculate 5-metric code quality scoring system.
+    Calculate aggregate code health score.
     
-    Evaluates maintainability, testability, readability, performance, and security.
+    Evaluates maintainability, testability, readability, performance, and security,
+    then returns a single health score with a detailed breakdown.
     Results are cached for 1 hour to optimize performance.
     """
     # Verify repository belongs to user
@@ -159,28 +160,28 @@ async def calculate_quality_metrics(
         # Check if already cached in database
         if file.quality_metrics:
             processing_time = time.time() - start_time
-            return QualityMetricsResponse(
-                quality_metrics=file.quality_metrics,
+            return HealthScoreResponse(
+                health_score=file.quality_metrics,
                 processing_time=processing_time,
                 cached=True
             )
         
         # Calculate quality metrics
-        quality_metrics = await analysis_service.calculate_quality_metrics(
+        health_score = await analysis_service.calculate_quality_metrics(
             code=file.original_content,
             language=file.language,
             file_path=file.file_path
         )
         
         # Update database
-        file.quality_metrics = quality_metrics.dict()
+        file.quality_metrics = health_score.dict()
         await db.commit()
         await db.refresh(file)
         
         processing_time = time.time() - start_time
         
-        return QualityMetricsResponse(
-            quality_metrics=quality_metrics,
+        return HealthScoreResponse(
+            health_score=health_score,
             processing_time=processing_time,
             cached=False
         )
@@ -276,213 +277,51 @@ async def generate_architecture_diagram(
         )
 
 
-@router.post("/repositories/{repo_id}/files/{file_id}/mentor", response_model=MentorInsightsResponse)
-async def generate_mentor_insights(
-    repo_id: int,
-    file_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+@router.post("/quick-file", response_model=QuickFileAnalysisResponse)
+async def quick_file_analysis(
+    request: QuickFileAnalysisRequest,
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Generate personalized mentoring insights and learning path.
-    
-    Assesses skill level and provides customized learning recommendations.
-    Results are cached for 1 hour.
+    Analyze a standalone file for quick insights.
+
+    Returns a concise summary and health score without storing data.
     """
-    # Verify repository belongs to user
-    repo_result = await db.execute(
-        select(Repository).where(
-            Repository.id == repo_id,
-            Repository.user_id == current_user.id
-        )
-    )
-    repo = repo_result.scalar_one_or_none()
-    
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    
-    # Get file
-    file_result = await db.execute(
-        select(CodeFile).where(
-            CodeFile.id == file_id,
-            CodeFile.repository_id == repo_id
-        )
-    )
-    file = file_result.scalar_one_or_none()
-    
-    if not file:
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    if not file.original_content:
-        raise HTTPException(status_code=400, detail="File content not available")
-    
     try:
-        start_time = time.time()
-        
-        # Get analysis service
+        parser = CodeParser(request.language)
+        parsed_code = parser.parse(request.code)
+
+        ai_service = AIDocumentationService()
+        summary_result = await ai_service.generate_file_summary(
+            parsed_code,
+            request.code,
+            request.language,
+            request.file_path
+        )
+
         analysis_service = get_code_analysis_service()
-        
-        # Check if already cached in database
-        if file.mentor_insights:
-            processing_time = time.time() - start_time
-            return MentorInsightsResponse(
-                mentor_insights=file.mentor_insights,
-                processing_time=processing_time,
-                cached=True
-            )
-        
-        # Generate mentor insights
-        mentor_insights = await analysis_service.generate_mentor_insights(
-            code=file.original_content,
-            language=file.language,
-            file_path=file.file_path
+        tokens_before = analysis_service.total_tokens_used
+        health_score = await analysis_service.calculate_quality_metrics(
+            code=request.code,
+            language=request.language,
+            file_path=request.file_path
         )
-        
-        # Update database
-        file.mentor_insights = mentor_insights.dict()
-        await db.commit()
-        await db.refresh(file)
-        
-        processing_time = time.time() - start_time
-        
-        return MentorInsightsResponse(
-            mentor_insights=mentor_insights,
-            processing_time=processing_time,
-            cached=False
+        tokens_after = analysis_service.total_tokens_used
+        tokens_used = summary_result.tokens_used + max(0, tokens_after - tokens_before)
+
+        return QuickFileAnalysisResponse(
+            summary=summary_result.content,
+            health_score=health_score,
+            tokens_used=tokens_used
         )
-        
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(f"Error generating mentor insights: {e}")
+        print(f"Error running quick file analysis: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to generate mentor insights: {str(e)}"
+            detail=f"Failed to analyze file: {str(e)}"
         )
 
 
-@router.post("/repositories/{repo_id}/analyze-all", response_model=BatchAnalysisResponse)
-async def batch_analyze_repository(
-    repo_id: int,
-    request: BatchAnalysisRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Perform batch analysis on all files in a repository.
-    
-    Allows selective analysis types and force regeneration of cached results.
-    Useful for comprehensive repository analysis.
-    """
-    # Verify repository belongs to user
-    repo_result = await db.execute(
-        select(Repository).where(
-            Repository.id == repo_id,
-            Repository.user_id == current_user.id
-        )
-    )
-    repo = repo_result.scalar_one_or_none()
-    
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    
-    # Get all files in repository
-    files_result = await db.execute(
-        select(CodeFile).where(CodeFile.repository_id == repo_id)
-    )
-    files = files_result.scalars().all()
-    
-    if not files:
-        raise HTTPException(status_code=404, detail="No files found in repository")
-    
-    try:
-        start_time = time.time()
-        results = {}
-        cached_counts = {analysis_type: 0 for analysis_type in request.analysis_types}
-        
-        # Get analysis service
-        analysis_service = get_code_analysis_service()
-        
-        for file in files:
-            if not file.original_content:
-                continue
-            
-            file_results = {}
-            
-            for analysis_type in request.analysis_types:
-                try:
-                    if analysis_type == "review":
-                        # Check cache unless force regenerate
-                        if not request.force_regenerate and file.code_review:
-                            cached_counts["review"] += 1
-                            continue
-                        
-                        code_review = await analysis_service.generate_code_review(
-                            code=file.original_content,
-                            language=file.language,
-                            file_path=file.file_path
-                        )
-                        file.code_review = code_review.dict()
-                        file_results["review"] = code_review
-                        
-                    elif analysis_type == "quality":
-                        if not request.force_regenerate and file.quality_metrics:
-                            cached_counts["quality"] += 1
-                            continue
-                        
-                        quality_metrics = await analysis_service.calculate_quality_metrics(
-                            code=file.original_content,
-                            language=file.language,
-                            file_path=file.file_path
-                        )
-                        file.quality_metrics = quality_metrics.dict()
-                        file_results["quality"] = quality_metrics
-                        
-                    elif analysis_type == "architecture":
-                        if not request.force_regenerate and file.architecture_data:
-                            cached_counts["architecture"] += 1
-                            continue
-                        
-                        architecture_diagram = await analysis_service.generate_architecture_diagram(
-                            code=file.original_content,
-                            language=file.language,
-                            file_path=file.file_path
-                        )
-                        file.architecture_data = architecture_diagram.dict()
-                        file_results["architecture"] = architecture_diagram
-                        
-                    elif analysis_type == "mentor":
-                        if not request.force_regenerate and file.mentor_insights:
-                            cached_counts["mentor"] += 1
-                            continue
-                        
-                        mentor_insights = await analysis_service.generate_mentor_insights(
-                            code=file.original_content,
-                            language=file.language,
-                            file_path=file.file_path
-                        )
-                        file.mentor_insights = mentor_insights.dict()
-                        file_results["mentor"] = mentor_insights
-                        
-                except Exception as e:
-                    print(f"Error in batch analysis for file {file.file_path}, type {analysis_type}: {e}")
-                    file_results[analysis_type] = {"error": str(e)}
-            
-            if file_results:
-                results[file.file_path] = file_results
-        
-        # Commit all changes
-        await db.commit()
-        
-        processing_time = time.time() - start_time
-        
-        return BatchAnalysisResponse(
-            results=results,
-            processing_time=processing_time,
-            cached_counts=cached_counts
-        )
-        
-    except Exception as e:
-        print(f"Error in batch analysis: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Batch analysis failed: {str(e)}"
-        )

@@ -2,13 +2,16 @@
 GitHub repository integration service.
 
 Clones GitHub repositories and extracts code files for processing.
+Also provides GitHub API integration for fetching issues.
 """
 import os
 import shutil
 import tempfile
 import subprocess
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional, Any
 from pathlib import Path
+import httpx
+from app.core.cache import cache
 
 
 class GitHubService:
@@ -176,6 +179,77 @@ class GitHubService:
             url = url[:-4]
         
         return url
+    
+    @staticmethod
+    async def fetch_good_first_issues(repo_name: str, github_token: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Fetch "good first issue" labeled issues from GitHub.
+        
+        Args:
+            repo_name: Repository name in format "owner/repo"
+            github_token: Optional GitHub personal access token
+            
+        Returns:
+            List of issue dictionaries with title, body, url, labels, etc.
+        """
+        cache_key = cache.generate_cache_key("github_issues", repo_name, "good_first")
+        cached_issues = await cache.get(cache_key)
+        if cached_issues:
+            return cached_issues
+        
+        # Parse owner/repo from repo_name
+        if '/' not in repo_name:
+            return []
+        
+        owner, repo = repo_name.split('/', 1)
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
+        
+        headers = {"Accept": "application/vnd.github.v3+json"}
+        if github_token:
+            headers["Authorization"] = f"token {github_token}"
+        
+        params = {
+            "labels": "good first issue",
+            "state": "open",
+            "per_page": 10,
+            "sort": "updated",
+            "direction": "desc"
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(api_url, headers=headers, params=params)
+                response.raise_for_status()
+                issues = response.json()
+                
+                # Filter and format issues
+                good_first_issues = []
+                for issue in issues:
+                    if 'pull_request' in issue:  # Skip PRs
+                        continue
+                    good_first_issues.append({
+                        "number": issue.get("number"),
+                        "title": issue.get("title"),
+                        "body": issue.get("body", "")[:500],  # Truncate body
+                        "url": issue.get("html_url"),
+                        "labels": [label.get("name") for label in issue.get("labels", [])],
+                        "created_at": issue.get("created_at"),
+                        "updated_at": issue.get("updated_at"),
+                        "comments": issue.get("comments", 0),
+                    })
+                
+                # Cache for 1 hour
+                await cache.set(cache_key, good_first_issues, expire=3600)
+                return good_first_issues
+                
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return []  # Repo not found or not accessible
+            print(f"GitHub API error: {e}")
+            return []
+        except Exception as e:
+            print(f"Error fetching GitHub issues: {e}")
+            return []
 
 
 def process_github_repository(github_url: str, max_files: int = 100) -> Tuple[str, List[Dict[str, any]]]:

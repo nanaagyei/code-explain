@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import type { ArchitectureDiagramData, ArchitectureNode, ArchitectureEdge } from '../types/index';
@@ -19,10 +19,12 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
+import { toPng, toSvg } from 'html-to-image';
 
 interface ArchitectureDiagramProps {
   repositoryId: number;
   fileId: number;
+  highlightLine?: number | null;
 }
 
 // Custom node components
@@ -39,13 +41,13 @@ const FunctionNode: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
 );
 
 const ClassNode: React.FC<{ data: Record<string, unknown> }> = ({ data }) => (
-  <div className="px-4 py-2 shadow-md rounded-md bg-purple-100 border-2 border-purple-300">
+  <div className="px-4 py-2 shadow-md rounded-md bg-blue-50 border-2 border-blue-200">
     <div className="flex items-center">
-      <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-      <div className="text-xs font-bold text-purple-800">{data.label as string}</div>
+      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2" />
+      <div className="text-xs font-bold text-blue-900">{data.label as string}</div>
     </div>
     {data.description ? (
-      <div className="text-xs text-purple-600 mt-1">{String(data.description)}</div>
+      <div className="text-xs text-blue-700 mt-1">{String(data.description)}</div>
     ) : null}
   </div>
 );
@@ -81,10 +83,21 @@ const nodeTypes: NodeTypes = {
   api: ApiNode,
 };
 
-const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ repositoryId, fileId }) => {
+const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ repositoryId, fileId, highlightLine }) => {
   const [diagram, setDiagram] = useState<ArchitectureDiagramData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [focusSelection, setFocusSelection] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
+  const flowContainerRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
 
   const generateDiagramMutation = useMutation({
     mutationFn: () => apiClient.generateArchitectureDiagram(repositoryId, fileId),
@@ -179,6 +192,24 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, diagram?.layout]);
 
+  // When highlightLine is set (e.g. from "Show in diagram" in Code Review), select matching node and focus
+  React.useEffect(() => {
+    if (highlightLine == null || !diagram || !nodes.length) return;
+    const meta = diagram.nodes.find((n) => {
+      const m = (n as { metadata?: { line?: number; start_line?: number; end_line?: number } }).metadata;
+      if (!m) return false;
+      if (typeof m.line === 'number' && m.line === highlightLine) return true;
+      if (typeof m.start_line === 'number' && typeof m.end_line === 'number' && highlightLine >= m.start_line && highlightLine <= m.end_line) return true;
+      return false;
+    });
+    if (!meta) return;
+    const node = nodes.find((n) => n.id === meta.id);
+    if (node) {
+      setSelectedNode(node);
+      setFocusSelection(true);
+    }
+  }, [highlightLine, diagram, nodes, setSelectedNode, setFocusSelection]);
+
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
@@ -188,11 +219,92 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
     setSelectedNode(node);
   }, []);
 
-  const exportDiagram = (format: 'png' | 'svg') => {
-    // This would require additional libraries like html2canvas or react-flow-to-svg
-    console.log(`Exporting diagram as ${format}`);
-    // Implementation would go here
+  const exportDiagram = async (format: 'png' | 'svg') => {
+    const el = flowContainerRef.current;
+    if (!el || !diagram) return;
+    setExportMessage(null);
+    try {
+      const fn = format === 'png' ? toPng : toSvg;
+      const dataUrl = await fn(el, {
+        cacheBust: true,
+        backgroundColor: '#f9fafb',
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = `architecture-diagram.${format}`;
+      link.href = dataUrl;
+      link.click();
+      setExportMessage(`Exported as ${format.toUpperCase()}.`);
+      setTimeout(() => setExportMessage(null), 3000);
+    } catch (e) {
+      setExportMessage(`Export failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
   };
+
+  const buildMermaidDiagram = (diagramData: ArchitectureDiagramData) => {
+    const sanitizeId = (value: string) => value.replace(/[^a-zA-Z0-9_]/g, '_');
+    const escapeLabel = (value: string) => value.replace(/"/g, '\'');
+    const nodeIdMap = new Map<string, string>();
+    const lines = ['graph TD'];
+
+    diagramData.nodes.forEach((node) => {
+      const safeId = sanitizeId(node.id);
+      nodeIdMap.set(node.id, safeId);
+      lines.push(`${safeId}["${escapeLabel(node.label)}"]`);
+    });
+
+    diagramData.edges.forEach((edge) => {
+      const source = nodeIdMap.get(edge.source) || sanitizeId(edge.source);
+      const target = nodeIdMap.get(edge.target) || sanitizeId(edge.target);
+      const label = edge.label ? `|"${escapeLabel(edge.label)}"|` : '';
+      lines.push(`${source} -->${label} ${target}`);
+    });
+
+    return lines.join('\n');
+  };
+
+  const exportMermaid = async () => {
+    if (!diagram) return;
+    const mermaid = buildMermaidDiagram(diagram);
+    try {
+      await navigator.clipboard.writeText(mermaid);
+      setExportMessage('Mermaid copied to clipboard.');
+    } catch {
+      const blob = new Blob([mermaid], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'architecture-diagram.mmd';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setExportMessage('Mermaid download started.');
+    }
+  };
+
+  const displayNodes = useMemo(() => {
+    if (!focusSelection || !selectedNode) return nodes;
+    return nodes.map((node) => ({
+      ...node,
+      style: {
+        ...node.style,
+        opacity: node.id === selectedNode.id ? 1 : 0.25,
+        boxShadow: node.id === selectedNode.id ? '0 0 0 2px rgba(37, 99, 235, 0.4)' : undefined,
+      },
+    }));
+  }, [nodes, focusSelection, selectedNode]);
+
+  const displayEdges = useMemo(() => {
+    if (!focusSelection || !selectedNode) return edges;
+    return edges.map((edge) => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        opacity: edge.source === selectedNode.id || edge.target === selectedNode.id ? 1 : 0.2,
+      },
+    }));
+  }, [edges, focusSelection, selectedNode]);
 
   return (
     <div className="space-y-6">
@@ -206,6 +318,14 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
         <div className="flex items-center space-x-3">
           {diagram && (
             <>
+              {selectedNode && (
+                <button
+                  onClick={() => setFocusSelection((prev) => !prev)}
+                  className="px-4 py-2 bg-white border border-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 transition duration-200"
+                >
+                  {focusSelection ? 'Show All' : 'Focus Selection'}
+                </button>
+              )}
               <button
                 onClick={() => exportDiagram('png')}
                 className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition duration-200 flex items-center space-x-2"
@@ -218,12 +338,22 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
               
               <button
                 onClick={() => exportDiagram('svg')}
-                className="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition duration-200 flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
                 </svg>
                 <span>Export SVG</span>
+              </button>
+
+              <button
+                onClick={exportMermaid}
+                className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition duration-200 flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v16H4zM4 9h16M9 4v16" />
+                </svg>
+                <span>Export Mermaid</span>
               </button>
             </>
           )}
@@ -277,6 +407,12 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
         </div>
       )}
 
+      {exportMessage && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-sm text-blue-700">
+          {exportMessage}
+        </div>
+      )}
+
       {/* Diagram */}
       {diagram && (
         <div className="space-y-4">
@@ -289,7 +425,7 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
                 <span className="text-sm text-gray-700">Functions</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                <div className="w-4 h-4 bg-blue-500 rounded-full" />
                 <span className="text-sm text-gray-700">Classes</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -312,14 +448,15 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
           </div>
 
           {/* ReactFlow Diagram */}
-          <div className="h-[600px] border border-gray-200 rounded-xl bg-gray-50">
+          <div ref={flowContainerRef} className="h-[600px] border border-gray-200 rounded-xl bg-gray-50">
             <ReactFlow
-              nodes={nodes}
-              edges={edges}
+              nodes={displayNodes}
+              edges={displayEdges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onNodeContextMenu={onNodeContextMenu}
               nodeTypes={nodeTypes}
               fitView
               fitViewOptions={{ padding: 0.2 }}
@@ -336,7 +473,7 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
                 }}
                 nodeColor={(n) => {
                   if (n.type === 'function') return '#DBEAFE';
-                  if (n.type === 'class') return '#EDE9FE';
+                  if (n.type === 'class') return '#E0E7FF';
                   if (n.type === 'module') return '#D1FAE5';
                   if (n.type === 'api') return '#FEF3C7';
                   return '#F3F4F6';
@@ -346,10 +483,44 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
             </ReactFlow>
           </div>
 
+          {contextMenu && (
+            <div
+              className="fixed z-50 min-w-[160px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg"
+              style={{ left: contextMenu.x, top: contextMenu.y }}
+              role="menu"
+            >
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleZoomIn(contextMenu.node);
+                }}
+              >
+                Zoom in
+              </button>
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShowAll();
+                }}
+              >
+                Show all
+              </button>
+            </div>
+          )}
+
           {/* Node Details */}
           {selectedNode && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Node Details</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Node Details</h3>
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
+                  You are here
+                </span>
+              </div>
               <div className="space-y-2">
                 <div>
                   <span className="font-medium text-gray-700">Type:</span>

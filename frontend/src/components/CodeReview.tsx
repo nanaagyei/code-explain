@@ -6,9 +6,10 @@ import type { CodeReviewData, SecurityIssue, PerformanceIssue, BestPractice } fr
 interface CodeReviewProps {
   repositoryId: number;
   fileId: number;
+  onShowInDiagram?: (lineNumber: number) => void;
 }
 
-const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
+const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId, onShowInDiagram }) => {
   const [review, setReview] = useState<CodeReviewData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -147,7 +148,7 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
             </div>
           </div>
 
-          {/* Security Issues */}
+          {/* Security Issues - Top 3 by severity */}
           {review.security_issues.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="flex items-center mb-4">
@@ -161,7 +162,14 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
               </div>
               
               <div className="space-y-3">
-                {review.security_issues.map((issue: SecurityIssue, index: number) => (
+                {review.security_issues
+                  .sort((a, b) => {
+                    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+                    return (severityOrder[a.severity as keyof typeof severityOrder] ?? 99) - 
+                           (severityOrder[b.severity as keyof typeof severityOrder] ?? 99);
+                  })
+                  .slice(0, 3)
+                  .map((issue: SecurityIssue, index: number) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -173,6 +181,15 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
                             {issue.type}
                           </span>
                           <span className="text-sm text-gray-500">Line {issue.line_number}</span>
+                          {onShowInDiagram && (
+                            <button
+                              type="button"
+                              onClick={() => onShowInDiagram(issue.line_number)}
+                              className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Show in diagram
+                            </button>
+                          )}
                         </div>
                         
                         <p className="text-gray-700 mb-2">{issue.description}</p>
@@ -196,7 +213,7 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
             </div>
           )}
 
-          {/* Performance Issues */}
+          {/* Performance Issues - Top 3 by impact */}
           {review.performance_issues.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="flex items-center mb-4">
@@ -210,7 +227,14 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
               </div>
               
               <div className="space-y-3">
-                {review.performance_issues.map((issue: PerformanceIssue, index: number) => (
+                {review.performance_issues
+                  .sort((a, b) => {
+                    const impactOrder = { high: 0, medium: 1, low: 2 };
+                    return (impactOrder[a.impact as keyof typeof impactOrder] ?? 99) - 
+                           (impactOrder[b.impact as keyof typeof impactOrder] ?? 99);
+                  })
+                  .slice(0, 3)
+                  .map((issue: PerformanceIssue, index: number) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -222,6 +246,15 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
                             {issue.type}
                           </span>
                           <span className="text-sm text-gray-500">Line {issue.line_number}</span>
+                          {onShowInDiagram && (
+                            <button
+                              type="button"
+                              onClick={() => onShowInDiagram(issue.line_number)}
+                              className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Show in diagram
+                            </button>
+                          )}
                         </div>
                         
                         <p className="text-gray-700 mb-2">{issue.description}</p>
@@ -245,7 +278,7 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
             </div>
           )}
 
-          {/* Best Practices */}
+          {/* Best Practices - Top 3 by priority */}
           {review.best_practices.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="flex items-center mb-4">
@@ -259,7 +292,14 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
               </div>
               
               <div className="space-y-3">
-                {review.best_practices.map((practice: BestPractice, index: number) => (
+                {review.best_practices
+                  .sort((a, b) => {
+                    const priorityOrder = { high: 0, medium: 1, low: 2 };
+                    return (priorityOrder[a.priority as keyof typeof priorityOrder] ?? 99) - 
+                           (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 99);
+                  })
+                  .slice(0, 3)
+                  .map((practice: BestPractice, index: number) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -274,13 +314,13 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId }) => {
                         
                         <p className="text-gray-700 mb-2">{practice.description}</p>
                         
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                          <p className="text-sm text-purple-800">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
                             <strong>Suggestion:</strong> {practice.suggestion}
                           </p>
                           <button
                             onClick={() => copyToClipboard(practice.suggestion)}
-                            className="mt-2 text-xs text-purple-600 hover:text-purple-800 underline"
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
                           >
                             Copy suggestion to clipboard
                           </button>

@@ -121,7 +121,7 @@ console.log('Key Details:', keyDetails);
 const updatedKey = await codeExplain.apiKeys.update('key_abc123def456', {
   name: 'Updated Frontend Key',
   permissions: {
-    features: ['analyze', 'generate_docs', 'quality_metrics', 'ai_mentor'],
+    features: ['analyze', 'generate_docs', 'quality_metrics', 'architecture_diagrams'],
     resources: ['repositories', 'files', 'issues'],
     rateLimits: {
       requestsPerHour: 2000,
@@ -322,7 +322,7 @@ console.log('Audit Log:', auditLog);
       "details": {
         "changedBy": "user123",
         "changes": {
-          "added": ["ai_mentor"],
+          "added": ["architecture_diagrams"],
           "removed": [],
           "modified": {
             "rateLimits": {
@@ -416,7 +416,7 @@ codeexplain api-keys rotate key_abc123def456 --grace-period "24h"
 
 # Update permissions
 codeexplain api-keys update-permissions key_abc123def456 \
-  --add-features "ai_mentor" \
+  --add-features "architecture_diagrams" \
   --rate-limit "2000/hour"
 ```
 

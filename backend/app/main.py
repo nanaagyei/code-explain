@@ -10,7 +10,6 @@ from app.api import (
     chat,
     prompt_templates,
     user_api_keys,
-    batch_jobs,
     code_analysis,
     billing,
 )
@@ -77,7 +76,6 @@ app.include_router(repositories.router)
 app.include_router(chat.router)
 app.include_router(prompt_templates.router)
 app.include_router(user_api_keys.router)
-app.include_router(batch_jobs.router)
 app.include_router(code_analysis.router)
 app.include_router(billing.router)
 
