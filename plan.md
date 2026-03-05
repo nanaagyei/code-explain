@@ -83,6 +83,19 @@ Last updated: 2026-01-15
 - [x] VS Code extension
 - [x] CLI tool
 
+## Near-Term Delivery (2026-03-04)
+
+- [x] Add config-driven backend rate limiting with headers and 429 handling
+- [x] Add GitHub webhook + PR analysis persistence + PR comment endpoint (dry-run)
+- [x] Add quality snapshot history, aggregate endpoint, and quality weight profile API
+- [x] Add outbound webhook endpoint CRUD + signed delivery retries/dead-letter state
+- [x] Add collaboration sessions, notes, and websocket presence stream
+- [x] Add repository overview endpoint for VS Code workspace analysis
+- [x] Add VS Code command: Analyze Repository
+- [x] Add Settings UI sections: custom templates, quality profile, webhooks, analytics
+- [x] Add backend unit tests and extension tests for new API client/repository overview
+- [x] Add CI workflow for backend/frontend/CLI/extension checks
+
 ## Phase 3.5: VS Code Extension & CLI
 
 ### VS Code Extension (`codexplain-vscode`)

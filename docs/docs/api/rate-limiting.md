@@ -1,5 +1,7 @@
 # Rate Limiting
 
+> **Implementation note (2026-03-04):** Production behavior is currently config-driven (single policy set via environment variables such as `RATE_LIMIT_PER_MINUTE`, `AUTH_RATE_LIMIT_PER_MINUTE`, `UPLOAD_RATE_LIMIT_PER_MINUTE`, and `ANALYSIS_RATE_LIMIT_PER_MINUTE`) with standard `429` responses and `X-RateLimit-*` headers. The plan-tier tables below are roadmap guidance and not fully enforced by billing tiers yet.
+
 Code Explain implements comprehensive rate limiting to ensure fair usage and system stability. This document covers rate limiting policies, implementation details, and best practices for handling limits.
 
 ## Overview

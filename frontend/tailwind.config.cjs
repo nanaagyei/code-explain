@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -12,9 +12,6 @@ export default {
       },
       colors: {
         page: '#fafaf9',
-      },
-        // Modern Minimalist Palette (OpenAI/Claude style)
-        // Base: White + Charcoal for high contrast
         charcoal: {
           DEFAULT: '#080808',
           50: '#F5F5F5',
@@ -29,20 +26,18 @@ export default {
           900: '#1A1A1A',
           950: '#080808',
         },
-        // Accent: Electric Blue for interactive elements
         electric: {
           50: '#E5F2FF',
           100: '#CCE5FF',
           200: '#99CCFF',
           300: '#66B2FF',
           400: '#3399FF',
-          500: '#0066FF', // Primary electric blue
+          500: '#0066FF',
           600: '#0052CC',
           700: '#003D99',
           800: '#002966',
           900: '#001433',
         },
-        // Primary colors (alias for electric/blue)
         primary: {
           50: '#E5F2FF',
           100: '#CCE5FF',
@@ -55,7 +50,6 @@ export default {
           800: '#002966',
           900: '#001433',
         },
-        // Accent (YC-style: slate, no purple)
         accent: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -68,7 +62,6 @@ export default {
           800: '#1e293b',
           900: '#0f172a',
         },
-        // Keep some utility colors
         success: {
           50: '#D1FAE5',
           100: '#A7F3D0',
@@ -116,10 +109,10 @@ export default {
         },
       },
       animation: {
-        'float': 'float 3s ease-in-out infinite',
+        float: 'float 3s ease-in-out infinite',
         'float-slow': 'float-slow 8s ease-in-out infinite',
         'float-slower': 'float-slower 12s ease-in-out infinite',
-        'glow': 'glow 2s ease-in-out infinite',
+        glow: 'glow 2s ease-in-out infinite',
         'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
         'slide-up': 'slide-up 0.3s ease-out',
       },
@@ -146,31 +139,31 @@ export default {
           '50%': { opacity: '0.1' },
         },
         'slide-up': {
-          'from': {
+          from: {
             transform: 'translateY(100%)',
-            opacity: '0'
+            opacity: '0',
           },
-          'to': {
+          to: {
             transform: 'translateY(0)',
-            opacity: '1'
-          }
+            opacity: '1',
+          },
         },
         'stagger-in': {
-          'from': {
+          from: {
             transform: 'translateY(12px)',
-            opacity: '0'
+            opacity: '0',
           },
-          'to': {
+          to: {
             transform: 'translateY(0)',
-            opacity: '1'
-          }
+            opacity: '1',
+          },
         },
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(0, 102, 255, 0.3)',
+        glow: '0 0 20px rgba(0, 102, 255, 0.3)',
         'glow-lg': '0 0 40px rgba(0, 102, 255, 0.4)',
       },
     },
   },
   plugins: [],
-}
+};

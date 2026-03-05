@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import type { UserApiKey, UserApiKeyCreate, UserApiKeyUpdate } from '../types/index';
 import { BackButton } from '../components/BackButton';
+import { TemplateManager } from '../components/TemplateManager';
+import { AnalyticsPanel } from '../components/AnalyticsPanel';
 import {
   Key,
   Cloud,
@@ -33,6 +34,15 @@ export default function Settings() {
     api_key: '',
     is_active: true
   });
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [qualityWeights, setQualityWeights] = useState({
+    readability: 0.25,
+    maintainability: 0.25,
+    security: 0.2,
+    performance: 0.15,
+    testability: 0.15,
+  });
 
   // Fetch user's API keys
   const { data: apiKeys, isLoading } = useQuery({
@@ -57,6 +67,30 @@ export default function Settings() {
     queryKey: ['billing', 'transactions'],
     queryFn: () => apiClient.getBillingTransactions(),
     enabled: Boolean(user),
+  });
+  const { data: webhooks } = useQuery({
+    queryKey: ['webhooks'],
+    queryFn: () => apiClient.listWebhookEndpoints(),
+  });
+  const saveWeightsMutation = useMutation({
+    mutationFn: () => apiClient.updateQualityProfile(qualityWeights),
+  });
+  const createWebhookMutation = useMutation({
+    mutationFn: () =>
+      apiClient.createWebhookEndpoint({
+        url: webhookUrl,
+        secret: webhookSecret,
+        events: ['repository.completed', 'repository.failed', 'analysis.completed'],
+      }),
+    onSuccess: () => {
+      setWebhookUrl('');
+      setWebhookSecret('');
+      queryClient.invalidateQueries({ queryKey: ['webhooks'] });
+    },
+  });
+  const deleteWebhookMutation = useMutation({
+    mutationFn: (id: number) => apiClient.deleteWebhookEndpoint(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['webhooks'] }),
   });
   const checkoutMutation = useMutation({
     mutationFn: (packId: number) => apiClient.createCheckoutSession(packId),
@@ -416,6 +450,90 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        {/* Quality Profile */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Quality Profile</h2>
+          <p className="text-sm text-gray-600 mb-4">Tune scoring weights for readability, maintainability, security, performance, and testability.</p>
+          <div className="space-y-3">
+            {Object.entries(qualityWeights).map(([key, value]) => (
+              <label key={key} className="block">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="font-medium text-gray-800 capitalize">{key}</span>
+                  <span className="text-gray-600">{Math.round(value * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(value * 100)}
+                  onChange={(e) =>
+                    setQualityWeights((prev) => ({
+                      ...prev,
+                      [key]: Number(e.target.value) / 100,
+                    }))
+                  }
+                  className="w-full"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => saveWeightsMutation.mutate()}
+            className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold"
+          >
+            Save Quality Weights
+          </button>
+        </div>
+
+        {/* Webhooks */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">API Webhooks</h2>
+          <p className="text-sm text-gray-600 mb-4">Receive `repository.completed`, `repository.failed`, and `analysis.completed` events.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg"
+              placeholder="https://example.com/webhook"
+            />
+            <input
+              value={webhookSecret}
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg"
+              placeholder="Signing secret"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => createWebhookMutation.mutate()}
+            disabled={!webhookUrl || !webhookSecret || createWebhookMutation.isPending}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+          >
+            Add Webhook
+          </button>
+          <ul className="mt-4 space-y-2">
+            {(webhooks ?? []).map((hook) => (
+              <li key={hook.id} className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{hook.url}</p>
+                  <p className="text-xs text-gray-500">{hook.events.join(', ')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteWebhookMutation.mutate(hook.id)}
+                  className="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <TemplateManager />
+        <AnalyticsPanel />
       </div>
 
       {/* Add API Key Modal */}

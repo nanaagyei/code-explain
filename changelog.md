@@ -99,3 +99,43 @@ Checkpoint log for the frontend redesign (YC-style, responsive, no gradients). E
 - **Cause:** Deleting a repo (especially while processing) hit FK constraints: `SavedExploration`, `CreditTransaction`, and `BatchJobItem` reference `repositories`/`code_files`. Cascade delete failed → 500. Frontend showed generic "Unable to connect…" for 500s.
 - **Backend:** `DELETE /repositories/:id` now, before deleting the repo: (1) deletes `SavedExploration` for that repo; (2) nulls `CreditTransaction.repository_id` and `code_file_id` for transactions referencing the repo or its files; (3) nulls `BatchJobItem.repository_id`. Then deletes the repo (cascade deletes `code_files`). On failure, rolls back and returns 500 with a clear `detail` suggesting "mark as failed first" if still processing.
 - **Frontend:** 500/502/503/504 use `detail` from the response when present (via `getErrorMessage`). Delete modal shows an extra note when the repo is processing: "This will stop any ongoing processing and remove the repository."
+
+---
+
+## 2026-03-04
+
+### Near-term delivery implementation (partial + pending closure)
+
+#### Backend
+- Added rate limiting infrastructure (`slowapi`) with config-driven policies and standardized 429 responses.
+- Added integration models and APIs for:
+  - GitHub PR webhook intake and persisted PR analysis records.
+  - Outbound webhook endpoint CRUD, delivery queue, signature generation, retries, dead-letter.
+  - Quality metric snapshots, quality profile weights, aggregate/history endpoints.
+  - Analytics endpoints (`/analytics/overview`, `/analytics/quality-trends`, `/analytics/repository-benchmarks`).
+  - Collaboration sessions, persisted notes, and websocket presence stream.
+- Added repository event dispatch (`repository.completed`, `repository.failed`) and analysis completion webhook triggers.
+- Added repository overview endpoint for extension workspace summaries.
+- Second-pass hardening:
+  - Fixed frontend PostCSS/Tailwind config loading by migrating to `.cjs` config files.
+  - Upgraded GitHub PR processing to fetch real changed-file diffs from GitHub API.
+  - Upgraded PR comment endpoint to publish actual comments when `dry_run=false` (with credential checks).
+  - Added background webhook delivery worker on app lifespan (periodic queue processing).
+  - Tightened collaboration websocket authorization to session owner.
+  - Added broader backend integration-style tests for webhook retry logic and GitHub PR fetch parsing.
+- Added Alembic migration `9a7f6c5b4d3e_add_integrations_collab_quality_tables.py`.
+
+#### Frontend
+- Added Settings sections for quality profile weights, webhook management, custom template manager, and analytics.
+- Added `CollaborationPanel` and integrated it into repository detail.
+- Extended frontend API client and shared types for all new backend capabilities.
+- Added Vitest setup and initial component tests for analytics and collaboration.
+
+#### VS Code Extension
+- Added API client support for repository overview endpoint.
+- Added command `CodeXplain: Analyze Repository` with workspace file collection and markdown summary output.
+- Added/updated extension tests for repository overview client flow.
+
+#### CI/Docs
+- Added `.github/workflows/ci.yml` for backend/frontend/CLI/extension checks.
+- Updated docs status notes for tools, rate limiting, GitHub integration, and quality metrics.

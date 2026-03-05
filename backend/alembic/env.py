@@ -21,6 +21,15 @@ from app.models.repository import Repository, CodeFile
 from app.models.prompt_template import PromptTemplate
 from app.models.user_api_key import UserApiKey
 from app.models.batch_job import BatchJob, BatchJobItem
+from app.models.integrations import (
+    QualityProfile,
+    QualityMetricSnapshot,
+    GitHubPRAnalysis,
+    OutboundWebhookEndpoint,
+    OutboundWebhookDelivery,
+    CollaborationSession,
+    CollaborationNote,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

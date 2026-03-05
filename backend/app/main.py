@@ -4,6 +4,10 @@ from contextlib import asynccontextmanager
 from app.core.config import get_settings
 from app.core.cache import cache
 from app.core.database import engine, Base
+from app.core.database import AsyncSessionLocal
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+import asyncio
 from app.api import (
     auth,
     repositories,
@@ -12,7 +16,12 @@ from app.api import (
     user_api_keys,
     code_analysis,
     billing,
+    integrations,
+    webhooks,
+    analytics,
+    collaboration,
 )
+from app.services.integrations_service import process_due_webhook_deliveries
 
 settings = get_settings()
 
@@ -42,10 +51,31 @@ async def lifespan(app: FastAPI):
     
     print("✓ CodeXplain API is ready!\n")
     
+    stop_worker = asyncio.Event()
+
+    async def webhook_worker():
+        while not stop_worker.is_set():
+            try:
+                async with AsyncSessionLocal() as db:
+                    await process_due_webhook_deliveries(db, limit=50)
+            except Exception as e:
+                print(f"Webhook worker error: {e}")
+            try:
+                await asyncio.wait_for(stop_worker.wait(), timeout=15.0)
+            except asyncio.TimeoutError:
+                continue
+
+    worker_task = asyncio.create_task(webhook_worker())
+
     yield
     
     # Shutdown
     print("\n🛑 Shutting down CodeXplain API...")
+    stop_worker.set()
+    try:
+        await worker_task
+    except Exception:
+        pass
     await cache.disconnect()
     await engine.dispose()
     print("✓ Cleanup complete")
@@ -60,6 +90,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Configure CORS
 app.add_middleware(
@@ -78,6 +110,10 @@ app.include_router(prompt_templates.router)
 app.include_router(user_api_keys.router)
 app.include_router(code_analysis.router)
 app.include_router(billing.router)
+app.include_router(integrations.router)
+app.include_router(webhooks.router)
+app.include_router(analytics.router)
+app.include_router(collaboration.router)
 
 
 # Root endpoint

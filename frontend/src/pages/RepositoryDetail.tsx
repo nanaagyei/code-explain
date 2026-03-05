@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
+import { CollaborationPanel } from '../components/CollaborationPanel';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { getUserFriendlyError } from '../utils/errorMessages';
@@ -642,6 +643,12 @@ export default function RepositoryDetail() {
           </div>
         )}
       </div>
+
+      {repository?.status === 'completed' && (
+        <div className="mt-8">
+          <CollaborationPanel repositoryId={repository.id} />
+        </div>
+      )}
 
       {/* Save Exploration Modal */}
       {showSaveModal && (

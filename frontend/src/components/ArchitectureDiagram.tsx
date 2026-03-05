@@ -219,6 +219,23 @@ const ArchitectureDiagramInner: React.FC<ArchitectureDiagramProps> = ({ reposito
     setSelectedNode(node);
   }, []);
 
+  const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    setSelectedNode(node);
+    setContextMenu({ x: event.clientX, y: event.clientY, node });
+  }, []);
+
+  const handleZoomIn = useCallback((node: Node) => {
+    setSelectedNode(node);
+    setFocusSelection(true);
+    setContextMenu(null);
+  }, []);
+
+  const handleShowAll = useCallback(() => {
+    setFocusSelection(false);
+    setContextMenu(null);
+  }, []);
+
   const exportDiagram = async (format: 'png' | 'svg') => {
     const el = flowContainerRef.current;
     if (!el || !diagram) return;

@@ -73,8 +73,8 @@ All tools support the same languages:
 - Rust (`.rs`)
 - C/C++ (`.c`, `.h`, `.cpp`, `.hpp`)
 
-## Coming Soon
+## Current Status
 
-- **VS Code Repository Overview**: Full repository analysis in VS Code
-- **JetBrains Plugin**: IntelliJ, PyCharm, WebStorm support
-- **GitHub App**: Automatic PR analysis and comments
+- **VS Code Repository Overview**: Available via `CodeXplain: Analyze Repository`.
+- **JetBrains Plugin**: Planned roadmap item.
+- **GitHub App**: Minimal webhook + PR analysis endpoints available in backend API; full marketplace install flow is planned.

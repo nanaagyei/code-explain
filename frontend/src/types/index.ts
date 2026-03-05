@@ -314,3 +314,102 @@ export interface StripeCheckoutSession {
   currency: string;
   status: string;
 }
+
+// ========== Integrations / Analytics / Collaboration ==========
+
+export interface QualityWeights {
+  readability: number;
+  maintainability: number;
+  security: number;
+  performance: number;
+  testability: number;
+}
+
+export interface QualitySnapshot {
+  id: number;
+  repository_id: number;
+  code_file_id: number;
+  source: string;
+  health_score: HealthScoreData;
+  created_at: string;
+}
+
+export interface QualityAggregate {
+  repository_id: number;
+  total_snapshots: number;
+  average_score: number;
+  latest_score?: number | null;
+  latest_grade?: string | null;
+  metrics_average: Record<string, number>;
+}
+
+export interface AnalyticsOverview {
+  repositories_total: number;
+  completed_repositories: number;
+  files_total: number;
+  average_health_score: number;
+  total_tokens_used: number;
+  total_credits_charged: number;
+}
+
+export interface AnalyticsTrendPoint {
+  date: string;
+  average_score: number;
+  snapshots: number;
+}
+
+export interface AnalyticsTrends {
+  days: number;
+  points: AnalyticsTrendPoint[];
+}
+
+export interface RepositoryBenchmark {
+  repository_id: number;
+  repository_name: string;
+  average_score: number;
+  latest_score?: number | null;
+  snapshots: number;
+}
+
+export interface RepositoryBenchmarks {
+  items: RepositoryBenchmark[];
+}
+
+export interface WebhookEndpoint {
+  id: number;
+  url: string;
+  events: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CollaborationNote {
+  id: number;
+  content: string;
+  user_id: number;
+  created_at: string;
+}
+
+export interface CollaborationSession {
+  id: number;
+  repository_id: number;
+  saved_exploration_id?: number | null;
+  title: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+  notes: CollaborationNote[];
+}
+
+export interface GitHubPRAnalysis {
+  owner: string;
+  repo: string;
+  pr_number: number;
+  head_sha?: string | null;
+  action: string;
+  status: string;
+  summary?: string | null;
+  result_payload?: Record<string, unknown> | null;
+  updated_at?: string | null;
+}

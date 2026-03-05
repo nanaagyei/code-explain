@@ -7,7 +7,7 @@ Features:
 - Real-time progress via WebSocket
 - Documentation retrieval
 """
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect, Form, status, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
@@ -17,6 +17,8 @@ import asyncio
 import json
 
 from app.core.database import get_db
+from app.core.config import get_settings
+from app.core.rate_limit import limiter
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.repository import Repository, CodeFile, SavedExploration
@@ -31,6 +33,10 @@ from app.services.code_parser import CodeParser
 from app.services.github_service import process_github_repository, GitHubService
 from app.services.prompt_template_service import PromptTemplateService
 from app.services.billing_service import BillingService, InsufficientCreditsError
+from app.services.integrations_service import (
+    enqueue_webhook_deliveries,
+    process_due_webhook_deliveries,
+)
 from app.schemas.repository import (
     RepositoryResponse,
     CodeFileResponse,
@@ -40,6 +46,37 @@ from app.schemas.repository import (
 )
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
+settings = get_settings()
+
+
+async def _emit_repository_event(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    event_name: str,
+    repository: Repository,
+    extra: Dict[str, Any] | None = None,
+) -> None:
+    payload: Dict[str, Any] = {
+        "event": event_name,
+        "repository": {
+            "id": repository.id,
+            "name": repository.name,
+            "status": repository.status,
+            "processed_files": repository.processed_files,
+            "total_files": repository.total_files,
+            "updated_at": repository.updated_at.isoformat() if repository.updated_at else None,
+        },
+    }
+    if extra:
+        payload["extra"] = extra
+    await enqueue_webhook_deliveries(
+        db,
+        user_id=user_id,
+        event_name=event_name,
+        payload=payload,
+    )
+    await process_due_webhook_deliveries(db)
 
 
 async def _ensure_ai_usage_allowed(current_user: User, db: AsyncSession) -> None:
@@ -58,7 +95,9 @@ async def _ensure_ai_usage_allowed(current_user: User, db: AsyncSession) -> None
             detail="Add your own OpenAI API key or purchase credits to run AI features.",
         )
 @router.post("/", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.upload_rate_limit_per_minute}/minute")
 async def create_repository(
+    request: Request,
     name: str = Form(...),
     files: List[UploadFile] = File(...),
     prompt_template_id: int = Form(None),
@@ -169,7 +208,9 @@ async def create_repository(
 
 
 @router.post("/github", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.upload_rate_limit_per_minute}/minute")
 async def create_repository_from_github(
+    request: Request,
     github_url: str = Form(...),
     max_files: int = Form(100),
     prompt_template_id: int = Form(None),
@@ -441,6 +482,13 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
                     await db.commit()
                     repo.status = "failed"
                     await db.commit()
+                    await _emit_repository_event(
+                        db,
+                        user_id=repo.user_id,
+                        event_name="repository.failed",
+                        repository=repo,
+                        extra={"reason": "insufficient_credits"},
+                    )
                     print(f"   💸 Stopped processing {file.file_path}: not enough credits")
                     return
                 except Exception as e:
@@ -480,6 +528,12 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
             # Update repository status
             repo.status = "completed"
             await db.commit()
+            await _emit_repository_event(
+                db,
+                user_id=repo.user_id,
+                event_name="repository.completed",
+                repository=repo,
+            )
             
             print(f"\n✅ Repository '{repo.name}' processing complete!")
             print(f"   Processed: {repo.processed_files}/{repo.total_files}")
@@ -490,6 +544,13 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
             try:
                 repo.status = "failed"
                 await db.commit()
+                await _emit_repository_event(
+                    db,
+                    user_id=repo.user_id,
+                    event_name="repository.failed",
+                    repository=repo,
+                    extra={"reason": str(e)},
+                )
             except:
                 pass
 
@@ -973,6 +1034,13 @@ async def mark_repository_failed(
         )
     repo.status = "failed"
     await db.commit()
+    await _emit_repository_event(
+        db,
+        user_id=repo.user_id,
+        event_name="repository.failed",
+        repository=repo,
+        extra={"reason": "manual_mark_failed"},
+    )
     print(f"   ✓ Repository {repo.name} (ID: {repo.id}) marked as failed (was stuck in processing)")
     return None
 

@@ -28,10 +28,10 @@ test('CodeXplainClient healthCheck fails when not ok', async () => {
 });
 
 test('CodeXplainClient quickFileAnalysis', async () => {
-  globalThis.fetch = async (url: unknown, opts?: { method?: string; body?: string }) => {
+  globalThis.fetch = (async (url: unknown, opts?: RequestInit) => {
     assert.strictEqual((url as string).endsWith('/code-analysis/quick-file'), true);
     assert.strictEqual(opts?.method, 'POST');
-    const body = opts?.body ? JSON.parse(opts.body as string) : {};
+    const body = opts?.body ? JSON.parse(String(opts.body)) : {};
     assert.strictEqual(typeof body.code, 'string');
     assert.strictEqual(typeof body.language, 'string');
     assert.strictEqual(typeof body.file_path, 'string');
@@ -43,7 +43,7 @@ test('CodeXplainClient quickFileAnalysis', async () => {
         tokens_used: 100
       })
     } as Response;
-  };
+  }) as typeof fetch;
   try {
     const { CodeXplainClient } = await import('../api/client');
     const client = new CodeXplainClient('http://localhost:8000', 'token');

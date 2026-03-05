@@ -38,6 +38,11 @@
         "icon": "$(comment-discussion)"
       },
       {
+        "command": "codexplain.analyzeRepository",
+        "title": "CodeXplain: Analyze Repository",
+        "icon": "$(repo)"
+      },
+      {
         "command": "codexplain.copyResults",
         "title": "CodeXplain: Copy Results to Clipboard"
       }
@@ -67,6 +72,12 @@
           "command": "codexplain.analyzeCurrentFile",
           "group": "codexplain@1",
           "when": "resourceLangId =~ /^(python|javascript|typescript|typescriptreact|javascriptreact|java|c|cpp|go|rust)$/"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codexplain.analyzeRepository",
+          "when": "workspaceFolderCount > 0"
         }
       ]
     },

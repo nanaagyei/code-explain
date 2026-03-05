@@ -530,6 +530,29 @@ Do not include any other fields beyond those shown.
             breakdown=breakdown,
         )
 
+    def apply_custom_weights(self, health_score: HealthScore, weights: Dict[str, float]) -> HealthScore:
+        normalized = {
+            "readability": float(weights.get("readability", 0)),
+            "maintainability": float(weights.get("maintainability", 0)),
+            "security": float(weights.get("security", 0)),
+            "performance": float(weights.get("performance", 0)),
+            "testability": float(weights.get("testability", 0)),
+        }
+        total = sum(normalized.values())
+        if total <= 0:
+            return health_score
+        normalized = {k: v / total for k, v in normalized.items()}
+        new_score = 0.0
+        for metric_name, metric_value in health_score.metrics.items():
+            new_score += metric_value * normalized.get(metric_name, 0)
+        return HealthScore(
+            score=round(new_score, 1),
+            grade=self._grade_health_score(new_score),
+            summary=self._summarize_health_score(health_score.metrics),
+            metrics=health_score.metrics,
+            breakdown=health_score.breakdown,
+        )
+
     @staticmethod
     def _grade_health_score(score: float) -> str:
         if score >= 90:

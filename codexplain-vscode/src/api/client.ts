@@ -28,6 +28,25 @@ export interface QuickFileAnalysisResponse {
   tokens_used: number;
 }
 
+export interface RepositoryOverviewRequest {
+  repo_name?: string;
+  files: Array<{ path: string; content: string; language?: string }>;
+}
+
+export interface RepositoryOverviewResponse {
+  repo_name: string;
+  files_analyzed: number;
+  average_complexity: number;
+  entry_points: Array<{
+    path: string;
+    language: string;
+    functions: number;
+    classes: number;
+    complexity: number;
+  }>;
+  summary: string;
+}
+
 export class CodeXplainClient {
   constructor(private baseUrl: string, private token?: string) {}
 
@@ -156,6 +175,39 @@ export class CodeXplainClient {
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Explanation cancelled');
+      }
+      throw error;
+    } finally {
+      cancelListener?.dispose();
+    }
+  }
+
+  async repositoryOverview(
+    payload: RepositoryOverviewRequest,
+    cancellationToken?: CancellationToken
+  ): Promise<RepositoryOverviewResponse> {
+    const controller = new AbortController();
+    const cancelListener = cancellationToken?.onCancellationRequested(() => {
+      controller.abort();
+    });
+    try {
+      const response = await fetch(`${this.baseUrl}/code-analysis/repository-overview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {})
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const detail = await safeReadError(response);
+        throw new Error(detail);
+      }
+      return (await response.json()) as RepositoryOverviewResponse;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Repository analysis cancelled');
       }
       throw error;
     } finally {

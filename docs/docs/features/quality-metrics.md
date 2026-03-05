@@ -1,5 +1,7 @@
 # Health Score
 
+> **Implementation note (2026-03-04):** Health Score now supports persisted snapshot history, repository-level aggregate views, and configurable user weight profiles via API. Team/organization comparison language in this document should be interpreted as account-level repository benchmarking unless organization features are enabled in a future release.
+
 CodeExplain's Health Score provides a single headline score with a detailed 5-dimensional breakdown that evaluates your code across key quality dimensions.
 
 ## Overview

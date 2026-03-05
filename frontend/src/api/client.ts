@@ -28,7 +28,17 @@ import type {
   CreditPack,
   BillingSummary,
   CreditTransaction,
-  StripeCheckoutSession
+  StripeCheckoutSession,
+  QualityWeights,
+  QualitySnapshot,
+  QualityAggregate,
+  AnalyticsOverview,
+  AnalyticsTrends,
+  RepositoryBenchmarks,
+  WebhookEndpoint,
+  CollaborationSession,
+  CollaborationNote,
+  GitHubPRAnalysis
 } from '../types/index';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -309,6 +319,98 @@ class ApiClient {
 
   async generateArchitectureDiagram(repoId: number, fileId: number): Promise<ArchitectureDiagramResponse> {
     const response = await this.client.post(`/code-analysis/repositories/${repoId}/files/${fileId}/architecture`);
+    return response.data;
+  }
+
+  async getQualityHistory(repoId: number): Promise<QualitySnapshot[]> {
+    const response = await this.client.get<QualitySnapshot[]>(`/code-analysis/repositories/${repoId}/quality/history`);
+    return response.data;
+  }
+
+  async getQualityAggregate(repoId: number): Promise<QualityAggregate> {
+    const response = await this.client.get<QualityAggregate>(`/code-analysis/repositories/${repoId}/quality/aggregate`);
+    return response.data;
+  }
+
+  async updateQualityProfile(weights: QualityWeights): Promise<{ weights: QualityWeights }> {
+    const response = await this.client.put<{ weights: QualityWeights }>(`/code-analysis/quality-profile`, weights);
+    return response.data;
+  }
+
+  async getAnalyticsOverview(): Promise<AnalyticsOverview> {
+    const response = await this.client.get<AnalyticsOverview>('/analytics/overview');
+    return response.data;
+  }
+
+  async getAnalyticsTrends(days: number = 30): Promise<AnalyticsTrends> {
+    const response = await this.client.get<AnalyticsTrends>(`/analytics/quality-trends?days=${days}`);
+    return response.data;
+  }
+
+  async getRepositoryBenchmarks(): Promise<RepositoryBenchmarks> {
+    const response = await this.client.get<RepositoryBenchmarks>('/analytics/repository-benchmarks');
+    return response.data;
+  }
+
+  async createWebhookEndpoint(payload: { url: string; events: string[]; secret: string; is_active?: boolean }): Promise<WebhookEndpoint> {
+    const response = await this.client.post<WebhookEndpoint>('/webhooks/', payload);
+    return response.data;
+  }
+
+  async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
+    const response = await this.client.get<WebhookEndpoint[]>('/webhooks/');
+    return response.data;
+  }
+
+  async updateWebhookEndpoint(id: number, payload: Partial<{ events: string[]; secret: string; is_active: boolean }>): Promise<WebhookEndpoint> {
+    const response = await this.client.patch<WebhookEndpoint>(`/webhooks/${id}`, payload);
+    return response.data;
+  }
+
+  async deleteWebhookEndpoint(id: number): Promise<void> {
+    await this.client.delete(`/webhooks/${id}`);
+  }
+
+  async createCollabSession(payload: { repository_id: number; title: string; saved_exploration_id?: number }): Promise<CollaborationSession> {
+    const response = await this.client.post<CollaborationSession>('/collab/sessions', payload);
+    return response.data;
+  }
+
+  async getCollabSession(id: number): Promise<CollaborationSession> {
+    const response = await this.client.get<CollaborationSession>(`/collab/sessions/${id}`);
+    return response.data;
+  }
+
+  async createCollabNote(sessionId: number, content: string): Promise<CollaborationNote> {
+    const response = await this.client.post<CollaborationNote>(`/collab/sessions/${sessionId}/notes`, { content });
+    return response.data;
+  }
+
+  createCollabWebSocket(sessionId: number): WebSocket {
+    const token = localStorage.getItem('access_token');
+    const baseUrl = API_BASE_URL.replace(/^http/, 'ws');
+    const wsUrl = `${baseUrl}/collab/sessions/${sessionId}/stream${token ? `?token=${token}` : ''}`;
+    return new WebSocket(wsUrl);
+  }
+
+  async getGitHubPRAnalysis(owner: string, repo: string, prNumber: number): Promise<GitHubPRAnalysis> {
+    const response = await this.client.get<GitHubPRAnalysis>(`/integrations/github/pr-analyses/${owner}/${repo}/${prNumber}`);
+    return response.data;
+  }
+
+  async postGitHubPRComment(owner: string, repo: string, prNumber: number, body?: string, dry_run: boolean = true): Promise<{ published: boolean; dry_run: boolean; body: string }> {
+    const response = await this.client.post(`/integrations/github/pr-analyses/${owner}/${repo}/${prNumber}/comment`, { body, dry_run });
+    return response.data;
+  }
+
+  async getRepositoryOverview(payload: { repo_name?: string; files: Array<{ path: string; content: string; language?: string }> }): Promise<{
+    repo_name: string;
+    files_analyzed: number;
+    average_complexity: number;
+    entry_points: Array<{ path: string; language: string; functions: number; classes: number; complexity: number }>;
+    summary: string;
+  }> {
+    const response = await this.client.post('/code-analysis/repository-overview', payload);
     return response.data;
   }
 

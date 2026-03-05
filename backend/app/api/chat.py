@@ -3,7 +3,7 @@ Chat API endpoints for AI-powered Q&A.
 
 Provides streaming responses for real-time typewriter effect.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -12,9 +12,12 @@ import json
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.services.chat_service import get_chat_service
+from app.core.config import get_settings
+from app.core.rate_limit import limiter
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+settings = get_settings()
 
 
 class ChatRequest(BaseModel):
@@ -43,7 +46,9 @@ class ExplainFunctionRequest(BaseModel):
 
 
 @router.post("/stream")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def stream_chat(
+    http_request: Request,
     request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -83,7 +88,9 @@ async def stream_chat(
 
 
 @router.post("/explain")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def explain_code(
+    http_request: Request,
     request: QuickExplainRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -117,7 +124,9 @@ async def explain_code(
 
 
 @router.post("/document")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def document_function(
+    http_request: Request,
     request: FunctionDocRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -154,7 +163,9 @@ async def document_function(
 
 
 @router.post("/explain-function")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def explain_function(
+    http_request: Request,
     request: ExplainFunctionRequest,
     current_user: User = Depends(get_current_user)
 ):

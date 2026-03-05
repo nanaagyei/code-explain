@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { analyzeCurrentFile, lastAnalysisResult, onAnalysisComplete } from './commands/analyzeCurrentFile';
 import { explainSelection } from './commands/explainSelection';
+import { analyzeRepository } from './commands/analyzeRepository';
 import { CodeXplainHoverProvider } from './providers/hoverProvider';
 import { CodeXplainCodeLensProvider } from './providers/codeLensProvider';
 import {
@@ -31,6 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Register explain selection command
   const explainCommand = vscode.commands.registerCommand('codexplain.explainSelection', () =>
     explainSelection(context)
+  );
+  const analyzeRepoCommand = vscode.commands.registerCommand('codexplain.analyzeRepository', () =>
+    analyzeRepository()
   );
 
   // Register copy results command
@@ -121,6 +125,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     analyzeCommand,
     explainCommand,
+    analyzeRepoCommand,
     copyCommand,
     statusBarItem,
     ...hoverRegistrations,
