@@ -60,6 +60,7 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
         
         {!healthScore && (
           <button
+            type="button"
             onClick={() => calculateMetricsMutation.mutate()}
             disabled={isCalculating}
             className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"

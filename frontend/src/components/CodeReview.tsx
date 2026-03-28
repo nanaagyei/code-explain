@@ -78,6 +78,7 @@ const CodeReview: React.FC<CodeReviewProps> = ({ repositoryId, fileId, onShowInD
         
         {!review && (
           <button
+            type="button"
             onClick={() => generateReviewMutation.mutate()}
             disabled={isGenerating}
             className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
