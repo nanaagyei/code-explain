@@ -309,10 +309,10 @@ type(scope): description
 
 **Examples:**
 ```
-feat(api): add bulk analysis endpoint
+feat(api): add analysis endpoint
 
-Add new endpoint for analyzing multiple files simultaneously.
-Includes parallel processing and progress tracking.
+Add new endpoint for analyzing repository summaries.
+Includes caching and updated response schema.
 
 Closes #123
 ```

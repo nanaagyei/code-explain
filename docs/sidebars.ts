@@ -21,12 +21,19 @@ const sidebars: SidebarsConfig = {
         'features/ai-code-review',
         'features/quality-metrics',
         'features/architecture-diagrams',
-        'features/ai-mentor',
-        'features/bulk-operations',
         'features/github-integration',
         'features/custom-prompts',
         'features/api-key-management',
         'features/billing',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Developer Tools',
+      items: [
+        'tools/index',
+        'tools/vscode-extension',
+        'tools/cli',
       ],
     },
     {

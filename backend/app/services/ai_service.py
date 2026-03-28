@@ -15,6 +15,7 @@ from app.core.config import get_settings
 from app.core.cache import cache
 import asyncio
 from typing import Dict, List, Any, Optional
+import hashlib
 import json
 from app.models.prompt_template import PromptTemplate
 from app.models.user_api_key import UserApiKey
@@ -26,7 +27,7 @@ settings = get_settings()
 class AIServiceResult:
     """Wrapper for OpenAI responses with token usage."""
 
-    content: str
+    content: Any
     tokens_used: int
 
 
@@ -46,6 +47,21 @@ class AIDocumentationService:
         self.gpt4_model = settings.openai_model_gpt4
         self.gpt4_mini_model = settings.openai_model_gpt4_mini
         self.total_tokens_used = 0
+
+    @staticmethod
+    def _clean_json_response(content: str) -> str:
+        cleaned_content = content.strip()
+        if cleaned_content.startswith('```json'):
+            cleaned_content = cleaned_content[7:]
+            if cleaned_content.endswith('```'):
+                cleaned_content = cleaned_content[:-3]
+            cleaned_content = cleaned_content.strip()
+        elif cleaned_content.startswith('```'):
+            cleaned_content = cleaned_content[3:]
+            if cleaned_content.endswith('```'):
+                cleaned_content = cleaned_content[:-3]
+            cleaned_content = cleaned_content.strip()
+        return cleaned_content
     
     async def generate_function_documentation(
         self,
@@ -354,6 +370,103 @@ Be concise but insightful. Format in clear markdown."""
         await cache.set(cache_key, {"summary": summary}, expire=86400)
         
         return AIServiceResult(content=summary, tokens_used=tokens_used)
+
+    async def generate_start_here_summary(
+        self,
+        repo_name: str,
+        file_paths: List[str],
+        file_summaries: List[Dict[str, str]]
+    ) -> AIServiceResult:
+        """
+        Generate a repository-level "Start Here" summary.
+        """
+        paths_signature = "\n".join(file_paths[:200])
+        cache_key = cache.generate_cache_key(
+            "start_here_summary",
+            repo_name,
+            hashlib.sha256(paths_signature.encode()).hexdigest()[:12]
+        )
+
+        cached_summary = await cache.get(cache_key)
+        if cached_summary:
+            return AIServiceResult(content=cached_summary, tokens_used=0)
+
+        trimmed_summaries = file_summaries[:10]
+        summaries_block = "\n".join(
+            f"- {item['file_path']}: {item.get('summary', '')}"
+            for item in trimmed_summaries
+        )
+        file_paths_block = "\n".join(f"- {path}" for path in file_paths[:120])
+
+        prompt = f"""You are generating a "Start Here" guide for a code repository.
+
+Repository name: {repo_name}
+
+Available file paths:
+{file_paths_block}
+
+Sample file summaries:
+{summaries_block}
+
+Return JSON with exactly these fields:
+{{
+  "project_summary": "2-3 sentences plain English summary of what the project does",
+  "problem_solved": "1-2 sentences describing the problem it solves",
+  "structure_overview": "High-level overview of folder structure and key areas",
+  "entry_points": ["List 2-3 file paths to start reading"],
+  "contributor_quick_start": {{
+    "setup": "Short setup guidance if inferable, otherwise say 'Not specified in repository files.'",
+    "active_areas": ["List 2-3 areas or folders with active development"],
+    "common_patterns": ["List 2-3 common patterns or conventions you can infer"]
+  }}
+}}
+
+Be specific, use file paths from the list, and avoid jargon."""
+
+        response = await asyncio.to_thread(
+            self.client.chat.completions.create,
+            model=self.gpt4_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert technical writer. "
+                        "Provide concise, newcomer-friendly summaries. "
+                        "Always respond with valid JSON."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=900
+        )
+
+        content = response.choices[0].message.content or ""
+        tokens_used = response.usage.total_tokens
+        self.total_tokens_used += tokens_used
+
+        try:
+            cleaned_content = self._clean_json_response(content)
+            start_here = json.loads(cleaned_content)
+        except (json.JSONDecodeError, ValueError):
+            start_here = {
+                "project_summary": f"{repo_name} codebase with {len(file_paths)} files.",
+                "problem_solved": "Not specified in repository files.",
+                "structure_overview": "Not specified in repository files.",
+                "entry_points": file_paths[:3],
+                "contributor_quick_start": {
+                    "setup": "Not specified in repository files.",
+                    "active_areas": [],
+                    "common_patterns": []
+                }
+            }
+
+        await cache.set(cache_key, start_here, expire=86400)
+
+        return AIServiceResult(content=start_here, tokens_used=tokens_used)
     
     async def generate_inline_comments(
         self,
@@ -639,3 +752,231 @@ File Content:
             # This would need to be called from the repository processing
             # where we have access to the database session
             pass
+
+    async def compare_repositories(
+        self,
+        repo1_name: str,
+        repo1_summary: Dict[str, Any],
+        repo2_name: str,
+        repo2_summary: Dict[str, Any]
+    ) -> AIServiceResult:
+        """
+        Compare two repositories and generate insights about their differences.
+        """
+        cache_key = cache.generate_cache_key(
+            "repo_comparison",
+            repo1_name,
+            repo2_name,
+            hashlib.md5(json.dumps(repo1_summary, sort_keys=True).encode()).hexdigest()[:8],
+            hashlib.md5(json.dumps(repo2_summary, sort_keys=True).encode()).hexdigest()[:8]
+        )
+        
+        cached = await cache.get(cache_key)
+        if cached:
+            return AIServiceResult(content=json.loads(cached), tokens_used=0)
+        
+        prompt = f"""Compare these two code repositories and provide insights:
+
+REPOSITORY 1: {repo1_name}
+- Language: {repo1_summary.get('language', 'Unknown')}
+- Files: {repo1_summary.get('file_count', 0)}
+- Summary: {repo1_summary.get('summary', 'No summary available')}
+- Entry Points: {repo1_summary.get('entry_points', [])}
+- Architecture: {repo1_summary.get('architecture', 'Unknown')}
+
+REPOSITORY 2: {repo2_name}
+- Language: {repo2_summary.get('language', 'Unknown')}  
+- Files: {repo2_summary.get('file_count', 0)}
+- Summary: {repo2_summary.get('summary', 'No summary available')}
+- Entry Points: {repo2_summary.get('entry_points', [])}
+- Architecture: {repo2_summary.get('architecture', 'Unknown')}
+
+Return a JSON object with these fields:
+{{
+  "overview": "2-3 sentence comparison overview",
+  "similarities": ["list of key similarities"],
+  "differences": ["list of key differences"],
+  "architecture_comparison": "comparison of architectural approaches",
+  "complexity_comparison": "which is more complex and why",
+  "recommendations": ["suggestions based on comparison"],
+  "learning_opportunities": "what developers can learn from each"
+}}"""
+
+        try:
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.gpt4_model,
+                messages=[
+                    {"role": "system", "content": "You are a code architecture expert. Compare repositories objectively and provide actionable insights. Return valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1500
+            )
+            
+            tokens_used = response.usage.total_tokens if response.usage else 0
+            result_text = response.choices[0].message.content.strip()
+            
+            # Parse JSON response
+            result = self._clean_json_response(result_text)
+            
+            await cache.set(cache_key, json.dumps(result), expire=86400)
+            
+            return AIServiceResult(content=result, tokens_used=tokens_used)
+            
+        except Exception as e:
+            print(f"Error comparing repositories: {e}")
+            return AIServiceResult(
+                content={
+                    "overview": f"Error generating comparison: {str(e)}",
+                    "similarities": [],
+                    "differences": [],
+                    "architecture_comparison": "",
+                    "complexity_comparison": "",
+                    "recommendations": [],
+                    "learning_opportunities": ""
+                },
+                tokens_used=0
+            )
+
+    async def explain_changelog(
+        self,
+        changelog_content: str,
+        repo_name: str
+    ) -> AIServiceResult:
+        """
+        Explain a changelog or commit history in plain language.
+        """
+        cache_key = cache.generate_cache_key(
+            "changelog_explain",
+            repo_name,
+            hashlib.md5(changelog_content.encode()).hexdigest()[:16]
+        )
+        
+        cached = await cache.get(cache_key)
+        if cached:
+            return AIServiceResult(content=json.loads(cached), tokens_used=0)
+        
+        prompt = f"""Analyze this changelog/commit history and explain the changes:
+
+Repository: {repo_name}
+
+Changelog/Commits:
+{changelog_content[:8000]}
+
+Return a JSON object with:
+{{
+  "summary": "2-3 sentence overview of recent changes",
+  "major_changes": [
+    {{"title": "change title", "description": "what changed and why it matters", "impact": "high/medium/low"}}
+  ],
+  "breaking_changes": ["list of breaking changes if any"],
+  "new_features": ["list of new features"],
+  "bug_fixes": ["list of bug fixes"],
+  "recommendations": ["what users should know or do"]
+}}"""
+
+        try:
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.gpt4_mini_model,
+                messages=[
+                    {"role": "system", "content": "You are a technical writer explaining software changes to developers. Be concise and focus on what matters. Return valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.5,
+                max_tokens=1200
+            )
+            
+            tokens_used = response.usage.total_tokens if response.usage else 0
+            result_text = response.choices[0].message.content.strip()
+            result = self._clean_json_response(result_text)
+            
+            await cache.set(cache_key, json.dumps(result), expire=43200)  # 12 hours
+            
+            return AIServiceResult(content=result, tokens_used=tokens_used)
+            
+        except Exception as e:
+            print(f"Error explaining changelog: {e}")
+            return AIServiceResult(
+                content={
+                    "summary": f"Error analyzing changelog: {str(e)}",
+                    "major_changes": [],
+                    "breaking_changes": [],
+                    "new_features": [],
+                    "bug_fixes": [],
+                    "recommendations": []
+                },
+                tokens_used=0
+            )
+
+    async def generate_pr_checklist(
+        self,
+        file_changes: List[Dict[str, Any]],
+        repo_context: str
+    ) -> AIServiceResult:
+        """
+        Generate a pre-PR checklist based on code changes.
+        """
+        changes_summary = "\n".join([
+            f"- {c.get('file_path', 'unknown')}: {c.get('change_type', 'modified')}"
+            for c in file_changes[:20]
+        ])
+        
+        cache_key = cache.generate_cache_key(
+            "pr_checklist",
+            hashlib.md5(changes_summary.encode()).hexdigest()[:16]
+        )
+        
+        cached = await cache.get(cache_key)
+        if cached:
+            return AIServiceResult(content=json.loads(cached), tokens_used=0)
+        
+        prompt = f"""Generate a pre-PR checklist for these code changes:
+
+Repository Context: {repo_context}
+
+Files Changed:
+{changes_summary}
+
+Return a JSON object with:
+{{
+  "checklist": [
+    {{"item": "checklist item", "category": "testing/documentation/security/performance/style", "priority": "required/recommended/optional"}}
+  ],
+  "potential_issues": ["potential issues to watch for"],
+  "suggested_reviewers": ["types of expertise needed for review"],
+  "estimated_review_complexity": "low/medium/high"
+}}"""
+
+        try:
+            response = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                model=self.gpt4_mini_model,
+                messages=[
+                    {"role": "system", "content": "You are a senior code reviewer helping developers prepare quality pull requests. Be practical and specific. Return valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.5,
+                max_tokens=1000
+            )
+            
+            tokens_used = response.usage.total_tokens if response.usage else 0
+            result_text = response.choices[0].message.content.strip()
+            result = self._clean_json_response(result_text)
+            
+            await cache.set(cache_key, json.dumps(result), expire=3600)  # 1 hour
+            
+            return AIServiceResult(content=result, tokens_used=tokens_used)
+            
+        except Exception as e:
+            print(f"Error generating PR checklist: {e}")
+            return AIServiceResult(
+                content={
+                    "checklist": [],
+                    "potential_issues": [],
+                    "suggested_reviewers": [],
+                    "estimated_review_complexity": "unknown"
+                },
+                tokens_used=0
+            )

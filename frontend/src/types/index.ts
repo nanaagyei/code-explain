@@ -10,6 +10,7 @@ export interface User {
 export interface Repository {
   id: number;
   name: string;
+  url?: string;
   user_id: number;
   total_files: number;
   processed_files: number;
@@ -31,6 +32,18 @@ export interface CodeFile {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at?: string;
+}
+
+export interface StartHereSummary {
+  project_summary: string;
+  problem_solved: string;
+  structure_overview: string;
+  entry_points: string[];
+  contributor_quick_start: {
+    setup: string;
+    active_areas: string[];
+    common_patterns: string[];
+  };
 }
 
 export interface FileDocumentation {
@@ -159,91 +172,6 @@ export interface UserApiKeyUpdate {
   is_active?: boolean;
 }
 
-// ========== Batch Jobs ==========
-
-export type BatchJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'paused';
-export type BatchJobItemStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
-
-export interface BatchJobItem {
-  id: number;
-  batch_job_id: number;
-  repository_id?: number;
-  name: string;
-  source_type: string;
-  source_data?: Record<string, unknown>;
-  status: BatchJobItemStatus;
-  error_message?: string;
-  processing_time?: number;
-  created_at: string;
-  updated_at?: string;
-  started_at?: string;
-  completed_at?: string;
-}
-
-export interface BatchJobItemCreate {
-  name: string;
-  source_type: string;
-  source_data?: Record<string, unknown>;
-}
-
-export interface BatchJob {
-  id: number;
-  user_id: number;
-  name: string;
-  description?: string;
-  status: BatchJobStatus;
-  total_items: number;
-  completed_items: number;
-  failed_items: number;
-  progress: number;
-  meta_info?: Record<string, unknown>;
-  created_at: string;
-  updated_at?: string;
-  started_at?: string;
-  completed_at?: string;
-  items?: BatchJobItem[];
-}
-
-export interface BatchJobCreate {
-  name: string;
-  description?: string;
-  meta_info?: Record<string, unknown>;
-  items: BatchJobItemCreate[];
-}
-
-export interface BatchJobUpdate {
-  name?: string;
-  description?: string;
-  status?: BatchJobStatus;
-}
-
-export interface BatchJobSummary {
-  id: number;
-  user_id: number;
-  name: string;
-  description?: string;
-  status: BatchJobStatus;
-  total_items: number;
-  completed_items: number;
-  failed_items: number;
-  progress: number;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-}
-
-export interface BatchJobStats {
-  total_jobs: number;
-  pending_jobs: number;
-  processing_jobs: number;
-  completed_jobs: number;
-  failed_jobs: number;
-  cancelled_jobs: number;
-  total_repositories: number;
-  completed_repositories: number;
-  failed_repositories: number;
-}
-
 // ========== Code Analysis Features ==========
 
 export interface SecurityIssue {
@@ -277,14 +205,12 @@ export interface CodeReviewData {
   summary: string;
 }
 
-export interface QualityMetricsData {
-  maintainability: number;  // 0-100
-  testability: number;
-  readability: number;
-  performance: number;
-  security: number;
-  overall: number;
-  breakdown: Record<string, string>;  // explanations for each metric
+export interface HealthScoreData {
+  score: number;
+  grade: string;
+  summary: string;
+  metrics: Record<string, number>;
+  breakdown: Record<string, string>;
 }
 
 export interface ArchitectureNode {
@@ -309,34 +235,6 @@ export interface ArchitectureDiagramData {
   layout: 'horizontal' | 'vertical' | 'circular';
 }
 
-export interface LearningPathItem {
-  title: string;
-  description: string;
-  resources: string[];  // URLs, book titles, etc.
-  estimated_time: string;  // "2 hours", "1 week", etc.
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  prerequisites: string[];
-}
-
-export interface Challenge {
-  title: string;
-  description: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimated_time: string;
-  skills_practiced: string[];
-  starter_code?: string;
-}
-
-export interface MentorInsight {
-  skill_level: 'beginner' | 'intermediate' | 'advanced';
-  strengths: string[];
-  weaknesses: string[];
-  learning_path: LearningPathItem[];
-  challenges: Challenge[];
-  estimated_time: string;
-  next_milestone: string;
-}
-
 // API Response Types
 export interface CodeReviewResponse {
   code_review: CodeReviewData;
@@ -345,7 +243,7 @@ export interface CodeReviewResponse {
 }
 
 export interface QualityMetricsResponse {
-  quality_metrics: QualityMetricsData;
+  health_score: HealthScoreData;
   processing_time: number;
   cached: boolean;
 }
@@ -356,10 +254,10 @@ export interface ArchitectureDiagramResponse {
   cached: boolean;
 }
 
-export interface MentorInsightsResponse {
-  mentor_insights: MentorInsight;
-  processing_time: number;
-  cached: boolean;
+export interface TraceFileResponse {
+  upstream: string[];
+  downstream: string[];
+  role: string;
 }
 
 // ========== Billing ==========
@@ -417,13 +315,101 @@ export interface StripeCheckoutSession {
   status: string;
 }
 
-export interface BatchAnalysisRequest {
-  analysis_types: string[];  // ["review", "quality", "architecture", "mentor"]
-  force_regenerate: boolean;
+// ========== Integrations / Analytics / Collaboration ==========
+
+export interface QualityWeights {
+  readability: number;
+  maintainability: number;
+  security: number;
+  performance: number;
+  testability: number;
 }
 
-export interface BatchAnalysisResponse {
-  results: Record<string, unknown>;  // analysis_type -> result
-  processing_time: number;
-  cached_counts: Record<string, number>;
+export interface QualitySnapshot {
+  id: number;
+  repository_id: number;
+  code_file_id: number;
+  source: string;
+  health_score: HealthScoreData;
+  created_at: string;
+}
+
+export interface QualityAggregate {
+  repository_id: number;
+  total_snapshots: number;
+  average_score: number;
+  latest_score?: number | null;
+  latest_grade?: string | null;
+  metrics_average: Record<string, number>;
+}
+
+export interface AnalyticsOverview {
+  repositories_total: number;
+  completed_repositories: number;
+  files_total: number;
+  average_health_score: number;
+  total_tokens_used: number;
+  total_credits_charged: number;
+}
+
+export interface AnalyticsTrendPoint {
+  date: string;
+  average_score: number;
+  snapshots: number;
+}
+
+export interface AnalyticsTrends {
+  days: number;
+  points: AnalyticsTrendPoint[];
+}
+
+export interface RepositoryBenchmark {
+  repository_id: number;
+  repository_name: string;
+  average_score: number;
+  latest_score?: number | null;
+  snapshots: number;
+}
+
+export interface RepositoryBenchmarks {
+  items: RepositoryBenchmark[];
+}
+
+export interface WebhookEndpoint {
+  id: number;
+  url: string;
+  events: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CollaborationNote {
+  id: number;
+  content: string;
+  user_id: number;
+  created_at: string;
+}
+
+export interface CollaborationSession {
+  id: number;
+  repository_id: number;
+  saved_exploration_id?: number | null;
+  title: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+  notes: CollaborationNote[];
+}
+
+export interface GitHubPRAnalysis {
+  owner: string;
+  repo: string;
+  pr_number: number;
+  head_sha?: string | null;
+  action: string;
+  status: string;
+  summary?: string | null;
+  result_payload?: Record<string, unknown> | null;
+  updated_at?: string | null;
 }

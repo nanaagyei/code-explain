@@ -141,6 +141,37 @@ Include:
 
         async for chunk in self.stream_chat_response(prompt):
             yield chunk
+
+    async def explain_function(
+        self,
+        code: str,
+        name: str,
+        context: str | None = None,
+        language: str = "python"
+    ) -> AsyncGenerator[str, None]:
+        """
+        Explain a specific function or class with optional context.
+        """
+        prompt = f"""Explain this {language} function/class in plain English:
+
+Name: {name}
+
+Code:
+```{language}
+{code}
+```
+
+Include:
+- What it does
+- Inputs and outputs
+- How it's used or fits into the broader codebase
+- Any tricky parts or edge cases
+"""
+        if context:
+            prompt += f"\nContext:\n{context}\n"
+
+        async for chunk in self.stream_chat_response(prompt):
+            yield chunk
     
     async def answer_question(
         self,

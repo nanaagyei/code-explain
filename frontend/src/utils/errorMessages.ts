@@ -106,7 +106,9 @@ function getHttpErrorMessage(error: AxiosError, context?: ErrorContext): string 
     case 502:
     case 503:
     case 504:
-      return 'Our servers are experiencing issues. Please try again in a few moments. If the problem persists, contact support.';
+      return serverMessage
+        ? getErrorMessage(serverMessage, context)
+        : 'Our servers are experiencing issues. Please try again in a few moments. If the problem persists, contact support.';
 
     default:
       // For other status codes, try to use server message or default
@@ -156,7 +158,7 @@ function getErrorMessage(message: string, context?: ErrorContext): string {
   }
 
   if (lowerMessage.includes('invalid file type') || lowerMessage.includes('unsupported file')) {
-    return 'This file type is not supported. Please upload a code file (e.g., .py, .js, .ts, .java, .go).';
+    return 'This file type is not supported. Please upload a code file (e.g., .py, .js, .ts, .java, .cpp, .go, .rs).';
   }
 
   if (lowerMessage.includes('no files') || lowerMessage.includes('empty file')) {

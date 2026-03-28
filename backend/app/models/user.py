@@ -33,7 +33,6 @@ class User(Base):
     repositories = relationship("Repository", back_populates="user")
     prompt_templates = relationship("PromptTemplate", back_populates="user")
     api_keys = relationship("UserApiKey", back_populates="user")
-    batch_jobs = relationship("BatchJob", back_populates="user")
     credit_wallet = relationship(
         "UserCreditWallet",
         back_populates="user",

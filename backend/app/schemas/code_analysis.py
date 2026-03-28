@@ -5,10 +5,9 @@ Includes schemas for:
 - Code Review (security, performance, best practices)
 - Quality Metrics (5-metric scoring system)
 - Architecture Diagrams (component relationships)
-- Mentor Insights (skill assessment and learning paths)
 """
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 
 class SecurityIssue(BaseModel):
@@ -46,14 +45,12 @@ class CodeReview(BaseModel):
     summary: str
 
 
-class QualityMetrics(BaseModel):
-    """5-metric code quality scoring system."""
-    maintainability: float  # 0-100
-    testability: float
-    readability: float
-    performance: float
-    security: float
-    overall: float
+class HealthScore(BaseModel):
+    """Aggregate health score with detailed breakdown."""
+    score: float  # 0-100
+    grade: str  # A, B, C, D, F
+    summary: str
+    metrics: Dict[str, float]  # per-dimension scores
     breakdown: Dict[str, str]  # explanations for each metric
 
 
@@ -82,37 +79,6 @@ class ArchitectureDiagram(BaseModel):
     layout: str  # horizontal, vertical, circular
 
 
-class LearningPathItem(BaseModel):
-    """Individual item in learning path."""
-    title: str
-    description: str
-    resources: List[str]  # URLs, book titles, etc.
-    estimated_time: str  # "2 hours", "1 week", etc.
-    difficulty: str  # beginner, intermediate, advanced
-    prerequisites: List[str]
-
-
-class Challenge(BaseModel):
-    """Coding challenge recommendation."""
-    title: str
-    description: str
-    difficulty: str
-    estimated_time: str
-    skills_practiced: List[str]
-    starter_code: Optional[str] = None
-
-
-class MentorInsight(BaseModel):
-    """Complete mentor insights for skill development."""
-    skill_level: str  # beginner, intermediate, advanced
-    strengths: List[str]
-    weaknesses: List[str]
-    learning_path: List[LearningPathItem]
-    challenges: List[Challenge]
-    estimated_time: str
-    next_milestone: str
-
-
 # Request/Response schemas for API endpoints
 
 class CodeReviewResponse(BaseModel):
@@ -122,9 +88,9 @@ class CodeReviewResponse(BaseModel):
     cached: bool = False
 
 
-class QualityMetricsResponse(BaseModel):
-    """Response schema for quality metrics endpoint."""
-    quality_metrics: QualityMetrics
+class HealthScoreResponse(BaseModel):
+    """Response schema for health score endpoint."""
+    health_score: HealthScore
     processing_time: float
     cached: bool = False
 
@@ -136,21 +102,18 @@ class ArchitectureDiagramResponse(BaseModel):
     cached: bool = False
 
 
-class MentorInsightsResponse(BaseModel):
-    """Response schema for mentor insights endpoint."""
-    mentor_insights: MentorInsight
-    processing_time: float
-    cached: bool = False
+class QuickFileAnalysisRequest(BaseModel):
+    """Request schema for quick file analysis."""
+    code: str
+    language: str
+    file_path: str
+    repo_name: str | None = None
 
 
-class BatchAnalysisRequest(BaseModel):
-    """Request schema for batch analysis."""
-    analysis_types: List[str]  # ["review", "quality", "architecture", "mentor"]
-    force_regenerate: bool = False
+class QuickFileAnalysisResponse(BaseModel):
+    """Response schema for quick file analysis."""
+    summary: str
+    health_score: HealthScore
+    tokens_used: int
 
 
-class BatchAnalysisResponse(BaseModel):
-    """Response schema for batch analysis."""
-    results: Dict[str, Any]  # analysis_type -> result
-    processing_time: float
-    cached_counts: Dict[str, int]

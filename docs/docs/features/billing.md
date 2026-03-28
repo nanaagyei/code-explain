@@ -29,6 +29,8 @@ BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
 2. From Stripe’s dashboard create a “Checkout Session Completed” webhook and point it at `/billing/stripe/webhook`. Use the webhook secret above.
 3. (Optional) Create one-time Prices in Stripe and store the `stripe_price_id` on each credit pack. If omitted, the backend dynamically creates checkout line items from pack metadata.
 
+**Local development**: Run `stripe listen --forward-to http://localhost:8000/billing/stripe/webhook`, copy the printed webhook signing secret (`whsec_...`), and set `STRIPE_WEBHOOK_SECRET` to that value. The CLI uses a different secret than the Dashboard; your app must use the CLI secret when testing locally.
+
 When a user purchases a pack:
 
 1. The frontend calls `POST /billing/checkout` with the selected pack id.
@@ -60,7 +62,7 @@ When a user purchases a pack:
 ## Troubleshooting
 
 - **Webhook delivers twice**: The backend stores checkout sessions and only deposits credits the first time it sees `checkout.session.completed`.
-- **Credits not updating**: Check the Stripe webhook secret and ensure the `/billing/stripe/webhook` endpoint is reachable over HTTPS.
+- **Credits not updating**: Ensure `/billing/stripe/webhook` is reachable (HTTPS in production). When using **Stripe CLI** for local testing, `STRIPE_WEBHOOK_SECRET` must be the **CLI** signing secret (from `stripe listen` output), not the Dashboard webhook secret. Using the wrong secret causes signature verification to fail and credits are never deposited.
 - **Custom currency**: Update the `currency` field on each credit pack and Stripe checkout line items will inherit it automatically.
 
 For more details see the backend API references and the configuration guide.

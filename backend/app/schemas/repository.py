@@ -63,7 +63,31 @@ class FileDocumentationResponse(BaseModel):
     documented_code: str
 
 
+class ContributorQuickStart(BaseModel):
+    """Quick start guidance for contributors."""
+    setup: str
+    active_areas: List[str]
+    common_patterns: List[str]
+
+
+class StartHereSummary(BaseModel):
+    """Repository-level starter guide."""
+    project_summary: str
+    problem_solved: str
+    structure_overview: str
+    entry_points: List[str]
+    contributor_quick_start: ContributorQuickStart
+
+
+class TraceFileResponse(BaseModel):
+    """Trace this file: upstream/downstream dependencies and role."""
+    upstream: List[str] = Field(default_factory=list, description="File paths that import this file")
+    downstream: List[str] = Field(default_factory=list, description="File paths this file imports")
+    role: str = Field(default="", description="Short plain-English role of this file")
+
+
 class RepositoryDetailResponse(BaseModel):
     """Schema for repository with files"""
     repository: RepositoryResponse
     files: List[CodeFileResponse]
+    start_here: Optional[StartHereSummary] = None

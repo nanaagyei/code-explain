@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
-import type { QualityMetricsData } from '../types/index';
+import type { HealthScoreData } from '../types/index';
 
 interface QualityMetricsProps {
   repositoryId: number;
@@ -9,9 +9,9 @@ interface QualityMetricsProps {
 }
 
 const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId }) => {
-  const [metrics, setMetrics] = useState<QualityMetricsData | null>(null);
+  const [healthScore, setHealthScore] = useState<HealthScoreData | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const calculateMetricsMutation = useMutation({
     mutationFn: () => apiClient.calculateQualityMetrics(repositoryId, fileId),
@@ -19,7 +19,7 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
       setIsCalculating(true);
     },
     onSuccess: (response) => {
-      setMetrics(response.quality_metrics);
+      setHealthScore(response.health_score);
       setIsCalculating(false);
     },
     onError: (error) => {
@@ -34,84 +34,19 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
     return 'text-red-600';
   };
 
+  const getScoreBg = (score: number) => {
+    if (score >= 80) return 'bg-green-500';
+    if (score >= 60) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
 
-  const CircularProgress: React.FC<{
-    score: number;
-    label: string;
-    description: string;
-    metricKey: string;
-  }> = ({ score, label, description, metricKey }) => {
-    const radius = 60;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (score / 100) * circumference;
-
-    return (
-      <div className="text-center">
-        <div className="relative inline-flex items-center justify-center">
-          <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-            {/* Background circle */}
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              stroke="currentColor"
-              strokeWidth="8"
-              fill="transparent"
-              className="text-gray-200"
-            />
-            {/* Progress circle */}
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              stroke="currentColor"
-              strokeWidth="8"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              className={`transition-all duration-1000 ease-out ${getScoreColor(score)}`}
-              style={{
-                strokeDasharray: circumference,
-                strokeDashoffset: strokeDashoffset,
-              }}
-            />
-          </svg>
-          
-          {/* Score text */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${getScoreColor(score)}`}>
-                {score.toFixed(0)}
-              </div>
-              <div className="text-xs text-gray-500">/ 100</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-3">
-          <h3 className="text-sm font-semibold text-gray-900">{label}</h3>
-          <p className="text-xs text-gray-600 mt-1">{description}</p>
-        </div>
-
-        {/* Expandable breakdown */}
-        {metrics && (
-          <button
-            onClick={() => setExpandedMetric(expandedMetric === metricKey ? null : metricKey)}
-            className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
-          >
-            {expandedMetric === metricKey ? 'Hide details' : 'Show details'}
-          </button>
-        )}
-
-        {/* Breakdown details */}
-        {expandedMetric === metricKey && metrics && (
-          <div className="mt-3 p-3 bg-gray-50 rounded-lg text-left">
-            <p className="text-xs text-gray-700">{metrics.breakdown[metricKey]}</p>
-          </div>
-        )}
-      </div>
-    );
+  const metricOrder = ['maintainability', 'testability', 'readability', 'performance', 'security'];
+  const metricLabels: Record<string, string> = {
+    maintainability: 'Maintainability',
+    testability: 'Testability',
+    readability: 'Readability',
+    performance: 'Performance',
+    security: 'Security',
   };
 
   return (
@@ -119,11 +54,11 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quality Metrics</h2>
-          <p className="text-gray-600 mt-1">5-dimensional code quality assessment</p>
+          <h2 className="text-2xl font-bold text-gray-900">Health Score</h2>
+          <p className="text-gray-600 mt-1">Single score with detailed breakdown</p>
         </div>
         
-        {!metrics && (
+        {!healthScore && (
           <button
             onClick={() => calculateMetricsMutation.mutate()}
             disabled={isCalculating}
@@ -139,7 +74,7 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span>Calculate Metrics</span>
+                <span>Calculate Health Score</span>
               </>
             )}
           </button>
@@ -151,7 +86,7 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Analyzing code quality metrics...</p>
+            <p className="text-gray-600 mt-4">Calculating health score...</p>
           </div>
         </div>
       )}
@@ -165,115 +100,72 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
             </svg>
             <div>
               <h3 className="text-red-800 font-semibold">Calculation Failed</h3>
-              <p className="text-red-700 mt-1">Unable to calculate quality metrics. Please try again.</p>
+              <p className="text-red-700 mt-1">Unable to calculate health score. Please try again.</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Metrics Results */}
-      {metrics && (
+      {healthScore && (
         <div className="space-y-6">
-          {/* Overall Score */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-gray-200 rounded-xl p-6">
-            <div className="text-center">
-              <div className={`text-5xl font-bold ${getScoreColor(metrics.overall)} mb-2`}>
-                {metrics.overall.toFixed(1)}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-gray-600">Health Score</div>
+                <div className="flex items-baseline space-x-3 mt-2">
+                  <div className={`text-5xl font-bold ${getScoreColor(healthScore.score)}`}>
+                    {healthScore.score.toFixed(1)}
+                  </div>
+                  <span className="text-lg font-semibold text-gray-700">/ 100</span>
+                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-white border border-gray-200">
+                    Grade {healthScore.grade}
+                  </span>
+                </div>
+                <p className="text-gray-600 mt-3">{healthScore.summary}</p>
               </div>
-              <div className="text-lg text-gray-600 mb-4">Overall Quality Score</div>
-              <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-                metrics.overall >= 80 ? 'bg-green-100 text-green-800' :
-                metrics.overall >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {metrics.overall >= 80 ? 'Excellent' :
-                 metrics.overall >= 60 ? 'Good' : 'Needs Improvement'}
-              </div>
+              <button
+                onClick={() => setShowBreakdown((prev) => !prev)}
+                className="px-4 py-2 bg-white border border-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+              >
+                {showBreakdown ? 'Hide breakdown' : 'View detailed breakdown'}
+              </button>
             </div>
           </div>
 
-          {/* Individual Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            <CircularProgress
-              score={metrics.maintainability}
-              label="Maintainability"
-              description="Code structure & modularity"
-              metricKey="maintainability"
-            />
-            
-            <CircularProgress
-              score={metrics.testability}
-              label="Testability"
-              description="Ease of testing"
-              metricKey="testability"
-            />
-            
-            <CircularProgress
-              score={metrics.readability}
-              label="Readability"
-              description="Code clarity & documentation"
-              metricKey="readability"
-            />
-            
-            <CircularProgress
-              score={metrics.performance}
-              label="Performance"
-              description="Efficiency & optimization"
-              metricKey="performance"
-            />
-            
-            <CircularProgress
-              score={metrics.security}
-              label="Security"
-              description="Vulnerability assessment"
-              metricKey="security"
-            />
-          </div>
-
-          {/* Detailed Breakdown */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Analysis</h3>
-            
-            <div className="space-y-4">
-              {Object.entries(metrics.breakdown).map(([metric, explanation]) => (
-                <div key={metric} className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-semibold text-gray-900 capitalize">{metric}</h4>
-                  <p className="text-gray-700 mt-1">{explanation}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quality Legend */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quality Scale</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                <div>
-                  <div className="font-semibold text-gray-900">0-59: Needs Improvement</div>
-                  <div className="text-sm text-gray-600">Significant issues detected</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                <div>
-                  <div className="font-semibold text-gray-900">60-79: Good</div>
-                  <div className="text-sm text-gray-600">Minor improvements possible</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                <div>
-                  <div className="font-semibold text-gray-900">80-100: Excellent</div>
-                  <div className="text-sm text-gray-600">High quality code</div>
-                </div>
+          {showBreakdown && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Detailed Breakdown</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {metricOrder.map((metricKey) => {
+                  const score = healthScore.metrics[metricKey] ?? 0;
+                  return (
+                    <div key={metricKey} className="border border-gray-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {metricLabels[metricKey] || metricKey}
+                        </span>
+                        <span className={`text-sm font-semibold ${getScoreColor(score)}`}>
+                          {score.toFixed(0)}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-2 ${getScoreBg(score)}`}
+                          style={{ width: `${Math.min(score, 100)}%` }}
+                        />
+                      </div>
+                      {healthScore.breakdown[metricKey] && (
+                        <p className="text-xs text-gray-600 mt-2">
+                          {healthScore.breakdown[metricKey]}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Regenerate Button */}
           <div className="flex justify-center">
@@ -285,7 +177,7 @@ const QualityMetrics: React.FC<QualityMetricsProps> = ({ repositoryId, fileId })
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Recalculate Metrics</span>
+              <span>Recalculate Health Score</span>
             </button>
           </div>
         </div>

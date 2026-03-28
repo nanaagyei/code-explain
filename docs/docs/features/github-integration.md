@@ -1,5 +1,7 @@
 # GitHub Integration
 
+> **Implementation note (2026-03-04):** Current shipped scope includes repository ingestion, good-first-issues, signed webhook intake for PR events (`opened`, `synchronize`, `reopened`), persisted PR analyses, and a PR comment endpoint with dry-run support. Full GitHub Marketplace installation and OAuth install UX remain roadmap items.
+
 Code Explain's GitHub Integration provides seamless connectivity with GitHub repositories, enabling automated code analysis, documentation generation, and AI-powered development assistance directly within your GitHub workflow.
 
 ## Overview
@@ -24,7 +26,7 @@ GitHub Integration offers:
 ### Pull Request Integration
 - **Automated Reviews**: AI-powered code reviews on every PR
 - **Documentation Updates**: Automatically update documentation for changed code
-- **Quality Metrics**: Track code quality improvements over time
+- **Health Score**: Track code quality improvements over time
 - **Comment Integration**: Post analysis results as PR comments
 - **Status Checks**: Add analysis results as required status checks
 

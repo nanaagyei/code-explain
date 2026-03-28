@@ -29,7 +29,29 @@ class Settings(BaseSettings):
     
     # Rate Limiting
     rate_limit_per_minute: int = 20
+    auth_rate_limit_per_minute: int = 15
+    upload_rate_limit_per_minute: int = 10
+    analysis_rate_limit_per_minute: int = 20
+    webhook_rate_limit_per_minute: int = 120
+    rate_limit_storage_uri: str | None = None
     max_file_size_mb: int = 10
+
+    # Quality profile defaults (weights must sum to 1.0 in runtime validation)
+    default_weight_readability: float = 0.25
+    default_weight_maintainability: float = 0.25
+    default_weight_security: float = 0.20
+    default_weight_performance: float = 0.15
+    default_weight_testability: float = 0.15
+
+    # GitHub integration
+    github_app_id: str | None = None
+    github_app_private_key: str | None = None
+    github_webhook_secret: str | None = None
+    github_api_token: str | None = None
+
+    # Outbound webhooks
+    webhook_signing_secret: str | None = None
+    webhook_max_attempts: int = 5
 
     # Stripe / Billing
     stripe_secret_key: str | None = None

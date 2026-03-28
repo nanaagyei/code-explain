@@ -7,35 +7,82 @@ Features:
 - Real-time progress via WebSocket
 - Documentation retrieval
 """
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect, Form, status, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 from typing import List, Dict, Any
 from datetime import datetime
 import asyncio
 import json
 
 from app.core.database import get_db
+from app.core.config import get_settings
+from app.core.rate_limit import limiter
 from app.api.auth import get_current_user
 from app.models.user import User
-from app.models.repository import Repository, CodeFile
+from app.models.repository import Repository, CodeFile, SavedExploration
+from app.models.billing import CreditTransaction
+from app.models.batch_job import BatchJobItem
+import uuid
 from app.models.prompt_template import PromptTemplate
 from app.models.user_api_key import UserApiKey
 from app.services.documentation_service import DocumentationPipeline
 from app.services.ai_service import AIDocumentationService
 from app.services.code_parser import CodeParser
-from app.services.github_service import process_github_repository
+from app.services.github_service import process_github_repository, GitHubService
 from app.services.prompt_template_service import PromptTemplateService
 from app.services.billing_service import BillingService, InsufficientCreditsError
+from app.services.integrations_service import (
+    enqueue_webhook_deliveries,
+    process_due_webhook_deliveries,
+)
 from app.schemas.repository import (
     RepositoryResponse,
     CodeFileResponse,
     RepositoryDetailResponse,
-    FileDocumentationResponse
+    FileDocumentationResponse,
+    TraceFileResponse,
 )
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
+settings = get_settings()
+
+
+async def _emit_repository_event(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    event_name: str,
+    repository: Repository | None = None,
+    repository_data: Dict[str, Any] | None = None,
+    extra: Dict[str, Any] | None = None,
+) -> None:
+    """Emit webhook event. Use repository_data when repo may be expired after commit."""
+    if repository_data:
+        repo_payload = repository_data
+    elif repository:
+        await db.refresh(repository)
+        repo_payload = {
+            "id": repository.id,
+            "name": repository.name,
+            "status": repository.status,
+            "processed_files": repository.processed_files,
+            "total_files": repository.total_files,
+            "updated_at": repository.updated_at.isoformat() if repository.updated_at else None,
+        }
+    else:
+        return
+    payload: Dict[str, Any] = {"event": event_name, "repository": repo_payload}
+    if extra:
+        payload["extra"] = extra
+    await enqueue_webhook_deliveries(
+        db,
+        user_id=user_id,
+        event_name=event_name,
+        payload=payload,
+    )
+    await process_due_webhook_deliveries(db)
 
 
 async def _ensure_ai_usage_allowed(current_user: User, db: AsyncSession) -> None:
@@ -54,7 +101,9 @@ async def _ensure_ai_usage_allowed(current_user: User, db: AsyncSession) -> None
             detail="Add your own OpenAI API key or purchase credits to run AI features.",
         )
 @router.post("/", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.upload_rate_limit_per_minute}/minute")
 async def create_repository(
+    request: Request,
     name: str = Form(...),
     files: List[UploadFile] = File(...),
     prompt_template_id: int = Form(None),
@@ -144,7 +193,10 @@ async def create_repository(
             await db.refresh(repo)  # Refresh to load all attributes
             raise HTTPException(
                 status_code=400,
-                detail="No supported files found. Supported: .py, .js, .jsx"
+                detail=(
+                    "No supported files found. Supported: .py, .js, .jsx, .ts, .tsx, "
+                    ".java, .c, .h, .cpp, .hpp, .go, .rs"
+                )
             )
         
         return repo
@@ -162,7 +214,9 @@ async def create_repository(
 
 
 @router.post("/github", response_model=RepositoryResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.upload_rate_limit_per_minute}/minute")
 async def create_repository_from_github(
+    request: Request,
     github_url: str = Form(...),
     max_files: int = Form(100),
     prompt_template_id: int = Form(None),
@@ -190,9 +244,11 @@ async def create_repository_from_github(
 
         await _ensure_ai_usage_allowed(current_user, db)
         
-        # Clone and extract files
+        # Clone and extract files (run in thread to avoid blocking event loop)
         try:
-            repo_name, files = process_github_repository(github_url, max_files)
+            repo_name, files = await asyncio.to_thread(
+                process_github_repository, github_url, max_files
+            )
             print(f"   ✓ Extracted {len(files)} files from {repo_name}")
         except ValueError as e:
             error_msg = str(e)
@@ -214,6 +270,7 @@ async def create_repository_from_github(
         repo = Repository(
             user_id=current_user.id,
             name=repo_name,
+            url=github_url,
             total_files=len(files),
             status="pending"
         )
@@ -433,6 +490,13 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
                     await db.commit()
                     repo.status = "failed"
                     await db.commit()
+                    await _emit_repository_event(
+                        db,
+                        user_id=repo.user_id,
+                        event_name="repository.failed",
+                        repository=repo,
+                        extra={"reason": "insufficient_credits"},
+                    )
                     print(f"   💸 Stopped processing {file.file_path}: not enough credits")
                     return
                 except Exception as e:
@@ -441,9 +505,43 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
                     print(f"   ❌ Error processing {file.file_path}: {e}")
                     await db.commit()
             
+            # Generate repository-level "Start Here" summary
+            try:
+                completed_files = [file for file in files if file.documentation]
+                if completed_files:
+                    summary_inputs = [
+                        {
+                            "file_path": file.file_path,
+                            "summary": (file.documentation or {}).get("summary", "")
+                        }
+                        for file in completed_files
+                    ]
+                    start_here_result = await ai_service.generate_start_here_summary(
+                        repo.name,
+                        [file.file_path for file in completed_files],
+                        summary_inputs
+                    )
+                    if not user_api_key and start_here_result.tokens_used > 0:
+                        await usage_callback(start_here_result.tokens_used, {
+                            "stage": "start_here",
+                            "repository_id": repo.id
+                        })
+                    repo.total_tokens_used += start_here_result.tokens_used
+                    repo.meta_info = repo.meta_info or {}
+                    repo.meta_info["start_here"] = start_here_result.content
+                    await db.commit()
+            except Exception as e:
+                print(f"   ⚠️  Failed to generate Start Here summary: {e}")
+
             # Update repository status
             repo.status = "completed"
             await db.commit()
+            await _emit_repository_event(
+                db,
+                user_id=repo.user_id,
+                event_name="repository.completed",
+                repository=repo,
+            )
             
             print(f"\n✅ Repository '{repo.name}' processing complete!")
             print(f"   Processed: {repo.processed_files}/{repo.total_files}")
@@ -454,6 +552,13 @@ async def process_repository_background(repository_id: int, prompt_template_id: 
             try:
                 repo.status = "failed"
                 await db.commit()
+                await _emit_repository_event(
+                    db,
+                    user_id=repo.user_id,
+                    event_name="repository.failed",
+                    repository=repo,
+                    extra={"reason": str(e)},
+                )
             except:
                 pass
 
@@ -522,9 +627,319 @@ async def get_repository(
     )
     files = files_result.scalars().all()
     
+    start_here = None
+    if repo.meta_info and isinstance(repo.meta_info, dict):
+        start_here = repo.meta_info.get("start_here")
     return {
         "repository": repo,
-        "files": files
+        "files": files,
+        "start_here": start_here
+    }
+
+
+@router.get("/{repository_id}/good-first-issues")
+async def get_good_first_issues(
+    repository_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get "good first issue" labeled issues from GitHub for this repository.
+    
+    Args:
+        repository_id: Repository ID
+        current_user: Authenticated user
+        db: Database session
+        
+    Returns:
+        List of good first issues from GitHub
+    """
+    # Get repository
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id
+        )
+    )
+    repo = result.scalar_one_or_none()
+    
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    # Extract GitHub repo name from URL or repo name
+    github_repo = None
+    if repo.url and 'github.com' in repo.url:
+        github_repo = GitHubService.extract_repo_name(repo.url)
+    elif '/' in repo.name:
+        github_repo = repo.name
+    
+    if not github_repo:
+        return []
+    
+    # Fetch issues (no token for now - public repos only)
+    issues = await GitHubService.fetch_good_first_issues(github_repo)
+    return issues
+
+
+@router.post("/{repository_id}/explorations")
+async def save_exploration(
+    repository_id: int,
+    title: str = Form(...),
+    description: str = Form(None),
+    state: str = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Save an exploration session for sharing."""
+    # Verify ownership
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id
+        )
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    # Create exploration
+    exploration = SavedExploration(
+        share_id=str(uuid.uuid4()),
+        user_id=current_user.id,
+        repository_id=repository_id,
+        title=title,
+        description=description,
+        state=json.loads(state) if state else None,
+        is_public=1
+    )
+    db.add(exploration)
+    await db.commit()
+    await db.refresh(exploration)
+    
+    return {
+        "id": exploration.id,
+        "share_id": exploration.share_id,
+        "title": exploration.title,
+        "share_url": f"/explore/{exploration.share_id}"
+    }
+
+
+@router.get("/explore/{share_id}")
+async def get_shared_exploration(
+    share_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get a shared exploration by its share ID (public endpoint)."""
+    result = await db.execute(
+        select(SavedExploration).where(
+            SavedExploration.share_id == share_id,
+            SavedExploration.is_public == 1
+        )
+    )
+    exploration = result.scalar_one_or_none()
+    if not exploration:
+        raise HTTPException(status_code=404, detail="Exploration not found")
+    
+    # Increment view count
+    exploration.view_count += 1
+    await db.commit()
+    
+    # Get repository details
+    repo_result = await db.execute(
+        select(Repository).where(Repository.id == exploration.repository_id)
+    )
+    repo = repo_result.scalar_one_or_none()
+    
+    return {
+        "id": exploration.id,
+        "title": exploration.title,
+        "description": exploration.description,
+        "state": exploration.state,
+        "view_count": exploration.view_count,
+        "created_at": exploration.created_at,
+        "repository": {
+            "id": repo.id if repo else None,
+            "name": repo.name if repo else "Unknown"
+        }
+    }
+
+
+@router.get("/{repository_id}/explorations")
+async def list_explorations(
+    repository_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all saved explorations for a repository."""
+    result = await db.execute(
+        select(SavedExploration).where(
+            SavedExploration.repository_id == repository_id,
+            SavedExploration.user_id == current_user.id
+        ).order_by(SavedExploration.created_at.desc())
+    )
+    explorations = result.scalars().all()
+    
+    return [
+        {
+            "id": e.id,
+            "share_id": e.share_id,
+            "title": e.title,
+            "description": e.description,
+            "view_count": e.view_count,
+            "created_at": e.created_at,
+            "share_url": f"/explore/{e.share_id}"
+        }
+        for e in explorations
+    ]
+
+
+@router.post("/{repository_id}/explain-changelog")
+async def explain_changelog(
+    repository_id: int,
+    changelog: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Explain a changelog or commit history in plain language."""
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id
+        )
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    
+    ai_service = AIDocumentationService()
+    explanation = await ai_service.explain_changelog(changelog, repo.name)
+    
+    return {
+        "repository": repo.name,
+        "explanation": explanation.content,
+        "tokens_used": explanation.tokens_used
+    }
+
+
+@router.post("/{repository_id}/pr-checklist")
+async def generate_pr_checklist(
+    repository_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate a pre-PR checklist based on repository analysis."""
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id,
+            Repository.status == "completed"
+        )
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found or not completed")
+    
+    # Get files for context
+    files_result = await db.execute(
+        select(CodeFile).where(CodeFile.repository_id == repository_id)
+    )
+    files = files_result.scalars().all()
+    
+    file_changes = [
+        {"file_path": f.file_path, "change_type": "analyzed", "language": f.language}
+        for f in files
+    ]
+    
+    meta = repo.meta_info or {}
+    start_here = meta.get("start_here", {})
+    repo_context = f"{repo.name} - {start_here.get('project_summary', repo.language or 'Unknown language')}"
+    
+    ai_service = AIDocumentationService()
+    checklist = await ai_service.generate_pr_checklist(file_changes, repo_context)
+    
+    return {
+        "repository": repo.name,
+        "checklist": checklist.content,
+        "tokens_used": checklist.tokens_used
+    }
+
+
+@router.post("/compare")
+async def compare_repositories(
+    repo1_id: int = Form(...),
+    repo2_id: int = Form(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Compare two repositories and generate AI-powered insights."""
+    # Fetch both repositories
+    result1 = await db.execute(
+        select(Repository).where(
+            Repository.id == repo1_id,
+            Repository.user_id == current_user.id,
+            Repository.status == "completed"
+        )
+    )
+    repo1 = result1.scalar_one_or_none()
+    
+    result2 = await db.execute(
+        select(Repository).where(
+            Repository.id == repo2_id,
+            Repository.user_id == current_user.id,
+            Repository.status == "completed"
+        )
+    )
+    repo2 = result2.scalar_one_or_none()
+    
+    if not repo1 or not repo2:
+        raise HTTPException(status_code=404, detail="One or both repositories not found or not completed")
+    
+    # Get file counts
+    files1_result = await db.execute(
+        select(CodeFile).where(CodeFile.repository_id == repo1_id)
+    )
+    files1 = files1_result.scalars().all()
+    
+    files2_result = await db.execute(
+        select(CodeFile).where(CodeFile.repository_id == repo2_id)
+    )
+    files2 = files2_result.scalars().all()
+    
+    # Build summaries for comparison
+    meta1 = repo1.meta_info or {}
+    start_here1 = meta1.get("start_here", {})
+    
+    meta2 = repo2.meta_info or {}
+    start_here2 = meta2.get("start_here", {})
+    
+    repo1_summary = {
+        "language": repo1.language,
+        "file_count": len(files1),
+        "summary": start_here1.get("project_summary", ""),
+        "entry_points": start_here1.get("entry_points", []),
+        "architecture": start_here1.get("structure_overview", "")
+    }
+    
+    repo2_summary = {
+        "language": repo2.language,
+        "file_count": len(files2),
+        "summary": start_here2.get("project_summary", ""),
+        "entry_points": start_here2.get("entry_points", []),
+        "architecture": start_here2.get("structure_overview", "")
+    }
+    
+    # Generate comparison
+    ai_service = AIDocumentationService()
+    comparison = await ai_service.compare_repositories(
+        repo1.name, repo1_summary,
+        repo2.name, repo2_summary
+    )
+    
+    return {
+        "repo1": {"id": repo1.id, "name": repo1.name},
+        "repo2": {"id": repo2.id, "name": repo2.name},
+        "comparison": comparison.content,
+        "tokens_used": comparison.tokens_used
     }
 
 
@@ -563,12 +978,87 @@ async def delete_repository(
     print(f"\n🗑️  Deleting repository: {repo.name} (ID: {repo.id})")
     print(f"   User: {current_user.username}")
     
-    # Delete repository (cascade will delete all files)
-    await db.delete(repo)
-    await db.commit()
+    try:
+        # Remove FK references that would block cascade delete. Order matters.
+        await db.execute(delete(SavedExploration).where(SavedExploration.repository_id == repository_id))
+        await db.execute(
+            update(CreditTransaction)
+            .where(CreditTransaction.repository_id == repository_id)
+            .values(repository_id=None, code_file_id=None)
+        )
+        # Null code_file_id for any transaction referencing a file in this repo
+        file_ids_result = await db.execute(select(CodeFile.id).where(CodeFile.repository_id == repository_id))
+        file_ids = list(file_ids_result.scalars().all())
+        if file_ids:
+            await db.execute(
+                update(CreditTransaction)
+                .where(CreditTransaction.code_file_id.in_(file_ids))
+                .values(code_file_id=None)
+            )
+        await db.execute(
+            update(BatchJobItem)
+            .where(BatchJobItem.repository_id == repository_id)
+            .values(repository_id=None)
+        )
+        # Delete repository (cascade will delete all code_files)
+        await db.delete(repo)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        print(f"   ❌ Delete failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete repository. Try marking it as failed first if it is still processing, then delete again.",
+        ) from e
     
     print(f"   ✓ Repository deleted successfully")
     
+    return None
+
+
+@router.post("/{repository_id}/mark-failed", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_repository_failed(
+    repository_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark a repository as failed when it is stuck in "processing" (e.g. after a server
+    restart that killed the background task). Only allowed when status is "processing".
+    """
+    result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id,
+        )
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    if repo.status != "processing":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Can only mark repositories stuck in 'processing' as failed. Current status: {repo.status}",
+        )
+    # Capture before commit to avoid expired object access in webhook
+    repo_data = {
+        "id": repo.id,
+        "name": repo.name,
+        "status": "failed",
+        "processed_files": repo.processed_files,
+        "total_files": repo.total_files,
+        "updated_at": repo.updated_at.isoformat() if repo.updated_at else None,
+    }
+    repo.status = "failed"
+    await db.commit()
+    await _emit_repository_event(
+        db,
+        user_id=repo.user_id,
+        event_name="repository.failed",
+        repository_data=repo_data,
+        extra={"reason": "manual_mark_failed"},
+    )
+    print(f"   ✓ Repository {repo.name} (ID: {repo.id}) marked as failed (was stuck in processing)")
     return None
 
 
@@ -628,6 +1118,44 @@ async def get_file_documentation(
         )
     
     return file.documentation
+
+
+@router.get("/{repository_id}/files/{file_id}/trace", response_model=TraceFileResponse)
+async def trace_file(
+    repository_id: int,
+    file_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Trace this file: upstream (who imports it), downstream (what it imports), and a short role.
+    """
+    repo_result = await db.execute(
+        select(Repository).where(
+            Repository.id == repository_id,
+            Repository.user_id == current_user.id,
+        )
+    )
+    repo = repo_result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    file_result = await db.execute(
+        select(CodeFile).where(
+            CodeFile.id == file_id,
+            CodeFile.repository_id == repository_id,
+        )
+    )
+    file = file_result.scalar_one_or_none()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    role = ""
+    if file.documentation and isinstance(file.documentation, dict):
+        role = (file.documentation.get("summary") or "")[:500]
+
+    # TODO: Build repo-level import graph to populate upstream/downstream.
+    return TraceFileResponse(upstream=[], downstream=[], role=role)
 
 
 @router.get("/{repository_id}/files/{file_id}/export", response_class=Response)

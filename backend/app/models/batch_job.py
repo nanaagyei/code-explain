@@ -65,7 +65,7 @@ class BatchJob(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
-    user = relationship("User", back_populates="batch_jobs")
+    user = relationship("User")  # User.batch_jobs removed when batch API was deleted
     items = relationship("BatchJobItem", back_populates="batch_job", cascade="all, delete-orphan")
     
     def __repr__(self):

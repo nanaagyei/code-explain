@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { BackButton } from '../components/BackButton';
 import { apiClient } from '../api/client';
 import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 import ReactMarkdown from 'react-markdown';
@@ -23,18 +24,23 @@ import {
   CodeBracketIcon,
   WrenchScrewdriverIcon,
   CubeIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { DocumentTextIcon as DocumentSolidIcon } from '@heroicons/react/24/solid';
 import CodeReviewComponent from '../components/CodeReview';
 import QualityMetricsComponent from '../components/QualityMetrics';
 import ArchitectureDiagramComponent from '../components/ArchitectureDiagram';
-import MentorHint from '../components/MentorHint';
 
 export default function FileDocumentation() {
   const { repositoryId, fileId } = useParams<{ repositoryId: string; fileId: string }>();
   const [activeTab, setActiveTab] = useState<'overview' | 'functions' | 'classes' | 'code' | 'review' | 'quality' | 'architecture'>('overview');
   const [isExporting, setIsExporting] = useState(false);
+  const [explainingItem, setExplainingItem] = useState<{ type: 'function' | 'class'; name: string; code: string } | null>(null);
+  const [explanation, setExplanation] = useState<string>('');
+  const [diagramHighlightLine, setDiagramHighlightLine] = useState<number | null>(null);
+  const [traceData, setTraceData] = useState<{ upstream: string[]; downstream: string[]; role: string } | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
 
   const handleExport = async (format: 'markdown' | 'json' | 'txt') => {
     if (!repositoryId || !fileId) return;
@@ -71,12 +77,68 @@ export default function FileDocumentation() {
     }
   }, [data, activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'architecture') {
+      setDiagramHighlightLine(null);
+      setTraceData(null);
+    }
+  }, [activeTab]);
+
+  const handleTraceFile = async () => {
+    if (!repositoryId || !fileId) return;
+    setTraceLoading(true);
+    setTraceData(null);
+    try {
+      const t = await apiClient.getFileTrace(parseInt(repositoryId), parseInt(fileId));
+      setTraceData(t);
+    } catch (err) {
+      console.error('Trace failed:', err);
+    } finally {
+      setTraceLoading(false);
+    }
+  };
+
+  const handleExplainFunction = async (code: string, name: string, language: string) => {
+    try {
+      const stream = await apiClient.explainFunction(code, name, doc?.summary, language);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let fullExplanation = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.chunk) {
+                fullExplanation += data.chunk;
+                setExplanation(fullExplanation);
+              }
+              if (data.done) break;
+            } catch {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error explaining function:', error);
+      setExplanation('Error generating explanation. Please try again.');
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-primary-50/30 to-accent-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent"></div>
-          <p className="mt-4 text-neutral-700 font-semibold">Loading documentation...</p>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-slate-300 border-t-blue-600" />
+          <p className="mt-4 text-slate-700 font-semibold">Loading documentation...</p>
         </div>
       </div>
     );
@@ -84,18 +146,13 @@ export default function FileDocumentation() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-primary-50/30 to-accent-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="mb-6 animate-float flex justify-center">
-            <DocumentSolidIcon className="w-32 h-32 text-gray-400" />
+          <div className="mb-6 flex justify-center">
+            <DocumentSolidIcon className="w-32 h-32 text-slate-400" />
           </div>
-          <h2 className="text-3xl font-bold text-neutral-900 mb-3">Documentation not found</h2>
-          <Link 
-            to={`/repositories/${repositoryId}`} 
-            className="text-primary-600 hover:text-accent-600 font-semibold transition"
-          >
-            ← Back to repository
-          </Link>
+          <h2 className="text-3xl font-bold text-slate-900 mb-3">Documentation not found</h2>
+          <BackButton to={repositoryId ? `/repositories/${repositoryId}` : '/dashboard'} label="Back to repository" />
         </div>
       </div>
     );
@@ -104,19 +161,24 @@ export default function FileDocumentation() {
   const doc = data;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-primary-50/30 to-accent-50/20">
+    <div className="min-h-screen bg-slate-50">
       {/* Modern Header */}
       <header className="bg-white/90 backdrop-blur-lg border-b border-neutral-200/50 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center flex-wrap gap-4">
             {/* Breadcrumb & Title */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 text-sm mb-2">
-                <Link to="/dashboard" className="text-neutral-500 hover:text-primary-600 transition">
+              <div className="flex flex-wrap items-center gap-2 text-sm mb-2">
+                <BackButton
+                  to={repositoryId ? `/repositories/${repositoryId}` : '/dashboard'}
+                  label="Back to repository"
+                />
+                <span className="text-neutral-400 hidden sm:inline">|</span>
+                <Link to="/dashboard" className="text-neutral-500 hover:text-blue-600 transition">
                   Dashboard
                 </Link>
                 <span className="text-neutral-400">/</span>
-                <Link to={`/repositories/${repositoryId}`} className="text-neutral-500 hover:text-primary-600 transition truncate">
+                <Link to={`/repositories/${repositoryId}`} className="text-neutral-500 hover:text-blue-600 transition truncate">
                   Repository
                 </Link>
               </div>
@@ -131,7 +193,7 @@ export default function FileDocumentation() {
                 <span className="inline-flex items-center rounded-full bg-blue-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-blue-700 border border-blue-200 whitespace-nowrap">
                   {doc.language}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-purple-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-purple-700 border border-purple-200 whitespace-nowrap">
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-slate-700 border border-slate-200 whitespace-nowrap">
                   Complexity: {doc.complexity}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-green-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-green-700 border border-green-200 whitespace-nowrap">
@@ -193,9 +255,9 @@ export default function FileDocumentation() {
                 { key: 'functions', label: 'Functions' },
                 { key: 'classes', label: 'Classes' },
                 { key: 'code', label: 'Code' },
-                { key: 'review', label: 'Code Review' },
-                { key: 'quality', label: 'Quality Score' },
-                { key: 'architecture', label: 'Architecture' }
+                { key: 'quality', label: 'Health Score' },
+                { key: 'architecture', label: 'Architecture' },
+                { key: 'review', label: 'Code Review' }
               ].map((tab) => (
                 <li key={tab.key}>
                   <button
@@ -213,7 +275,7 @@ export default function FileDocumentation() {
                       </span>
                     )}
                     {tab.key === 'classes' && doc.classes.length > 0 && (
-                      <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                      <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                         {doc.classes.length}
                       </span>
                     )}
@@ -250,7 +312,7 @@ export default function FileDocumentation() {
                 <PencilSquareIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-blue-600" />
                 <span>File Summary</span>
               </h2>
-              <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-4 sm:p-6 rounded-xl border border-primary-100">
+              <div className="bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
                 <div className="prose prose-primary max-w-none text-neutral-700 leading-relaxed text-sm sm:text-base">
                   <ReactMarkdown>{doc.summary}</ReactMarkdown>
                 </div>
@@ -341,11 +403,33 @@ export default function FileDocumentation() {
                     </div>
                   )}
 
-                  <div className="p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-lg border border-primary-100">
+                  <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg border border-primary-100">
                     <div className="prose prose-primary max-w-none text-neutral-700 text-sm leading-relaxed">
                       <ReactMarkdown>{func.documentation}</ReactMarkdown>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      const funcCode = doc.documented_code.split('\n').slice(func.start_line - 1, func.end_line).join('\n');
+                      setExplainingItem({ type: 'function', name: func.name, code: funcCode });
+                      setExplanation('');
+                      handleExplainFunction(funcCode, func.name, doc.language);
+                    }}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
+                  >
+                    <SparklesIcon className="w-4 h-4" />
+                    <span>Explain This Function</span>
+                  </button>
+
+                  {explainingItem?.type === 'function' && explainingItem.name === func.name && explanation && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">Detailed Explanation</h4>
+                      <div className="prose prose-sm max-w-none text-blue-800">
+                        <ReactMarkdown>{explanation}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -365,8 +449,8 @@ export default function FileDocumentation() {
               doc.classes.map((cls: ClassDocumentation, index: number) => (
                 <div key={index} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-neutral-200/50 hover:shadow-2xl transition-shadow duration-300">
                   <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="text-2xl font-semibold text-accent-700 flex items-center">
-                      <CubeIcon className="w-8 h-8 text-accent-600 mr-3" />
+                    <h3 className="text-2xl font-semibold text-slate-800 flex items-center">
+                      <CubeIcon className="w-8 h-8 text-blue-600 mr-3" />
                       <code className="font-mono">{cls.name}</code>
                     </h3>
                     <span className="text-sm text-neutral-500 bg-neutral-100 px-3 py-1 rounded-full font-medium">
@@ -379,7 +463,7 @@ export default function FileDocumentation() {
                       <span className="text-md font-semibold text-neutral-700">Methods: </span>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {cls.methods.map((method: string, mIdx: number) => (
-                          <code key={mIdx} className="text-sm bg-accent-100 text-accent-800 px-3 py-1 rounded-full font-mono font-semibold">
+                          <code key={mIdx} className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-mono font-semibold">
                             {method}
                           </code>
                         ))}
@@ -387,7 +471,7 @@ export default function FileDocumentation() {
                     </div>
                   )}
 
-                  <div className="p-4 bg-gradient-to-r from-accent-50 to-primary-50 rounded-lg border border-accent-100">
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="prose prose-accent max-w-none text-neutral-700 text-sm leading-relaxed">
                       <ReactMarkdown>{cls.documentation}</ReactMarkdown>
                     </div>
@@ -400,7 +484,7 @@ export default function FileDocumentation() {
 
         {activeTab === 'code' && (
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-neutral-200/50 overflow-hidden animate-fade-in">
-            <div className="p-6 bg-gradient-to-r from-primary-50 to-accent-50 border-b border-neutral-200">
+            <div className="p-6 bg-slate-50 border-b border-neutral-200">
               <h2 className="text-2xl font-bold text-neutral-900 flex items-center">
                 <CodeBracketIcon className="w-8 h-8 text-primary-600 mr-4" />
                 Source Code
@@ -431,21 +515,60 @@ export default function FileDocumentation() {
         )}
 
         {activeTab === 'architecture' && repositoryId && fileId && (
-          <ArchitectureDiagramComponent 
-            repositoryId={parseInt(repositoryId)} 
-            fileId={parseInt(fileId)} 
-          />
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={handleTraceFile}
+                disabled={traceLoading}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                {traceLoading ? 'Loading…' : 'Trace this file'}
+              </button>
+            </div>
+            {traceData && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-neutral-200/50">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-3">Trace</h3>
+                {traceData.role && (
+                  <p className="text-neutral-700 mb-4">{traceData.role}</p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-600 mb-2">Upstream (imports this file)</h4>
+                    {traceData.upstream.length ? (
+                      <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
+                        {traceData.upstream.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-neutral-500 text-sm">—</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-600 mb-2">Downstream (this file imports)</h4>
+                    {traceData.downstream.length ? (
+                      <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
+                        {traceData.downstream.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-neutral-500 text-sm">—</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <ArchitectureDiagramComponent 
+              repositoryId={parseInt(repositoryId)} 
+              fileId={parseInt(fileId)} 
+              highlightLine={diagramHighlightLine}
+            />
+          </div>
         )}
       </main>
 
-      {/* Mentor Hint Component */}
-      {repositoryId && fileId && (
-        <MentorHint 
-          repositoryId={parseInt(repositoryId)} 
-          fileId={parseInt(fileId)}
-          className="animate-fade-in"
-        />
-      )}
     </div>
   );
 }

@@ -3,9 +3,8 @@ AI-powered code analysis service for advanced features.
 
 Provides:
 - Code Review (security, performance, best practices)
-- Quality Metrics (5-metric scoring system)
+- Health Score (single score with detailed breakdown)
 - Architecture Diagrams (component relationships)
-- Mentor Insights (skill assessment and learning paths)
 """
 import asyncio
 import hashlib
@@ -17,8 +16,7 @@ from app.core.config import get_settings
 from app.core.cache import cache
 from app.schemas.code_analysis import (
     CodeReview, SecurityIssue, PerformanceIssue, BestPractice,
-    QualityMetrics, ArchitectureDiagram, ArchitectureNode, ArchitectureEdge,
-    MentorInsight, LearningPathItem, Challenge
+    HealthScore, ArchitectureDiagram, ArchitectureNode, ArchitectureEdge
 )
 
 settings = get_settings()
@@ -29,8 +27,7 @@ class CodeAnalysisService:
     Advanced AI-powered code analysis service.
     
     Uses GPT-4o for complex analysis with aggressive caching to minimize API costs.
-    Provides comprehensive code review, quality metrics, architecture visualization,
-    and personalized mentoring insights.
+    Provides comprehensive code review, quality metrics, and architecture visualization.
     """
     
     def __init__(self):
@@ -159,9 +156,9 @@ class CodeAnalysisService:
         code: str,
         language: str,
         file_path: str
-    ) -> QualityMetrics:
+    ) -> HealthScore:
         """
-        Calculate 5-metric code quality scoring system.
+        Calculate aggregate health score with detailed breakdown.
         
         Args:
             code: Source code to analyze
@@ -169,7 +166,7 @@ class CodeAnalysisService:
             file_path: File path for context
             
         Returns:
-            QualityMetrics object with scores and explanations
+            HealthScore object with aggregate score and explanations
         """
         # Check cache first
         cache_key = cache.generate_cache_key(
@@ -181,16 +178,14 @@ class CodeAnalysisService:
         
         cached_metrics = await cache.get(cache_key)
         if cached_metrics:
-            # Only use cache if it's a successful result (not error fallback)
-            cached_result = QualityMetrics(**cached_metrics)
-            if cached_result.overall > 50:  # Check if it's not the default error values
-                print(f"  ♻️  Cache hit for quality metrics: {file_path}")
+            cached_result = HealthScore(**cached_metrics)
+            if cached_result.score > 0:
+                print(f"  ♻️  Cache hit for health score: {file_path}")
                 return cached_result
-            else:
-                print(f"  🗑️  Cache miss (error response): {file_path}")
-                await cache.delete(cache_key)  # Clear bad cache entry
+            print(f"  🗑️  Cache miss (error response): {file_path}")
+            await cache.delete(cache_key)
         
-        print(f"  📊 Calculating quality metrics for: {file_path}")
+        print(f"  📊 Calculating health score for: {file_path}")
         start_time = time.time()
         
         # Generate prompt
@@ -231,34 +226,37 @@ class CodeAnalysisService:
         try:
             cleaned_content = self._clean_json_response(content)
             metrics_data = json.loads(cleaned_content)
-            quality_metrics = QualityMetrics(**metrics_data)
+            health_score = self._build_health_score(metrics_data)
         except (json.JSONDecodeError, ValueError) as e:
             print(f"  ❌ Error parsing quality metrics response: {e}")
-            # Return default metrics on error
-            quality_metrics = QualityMetrics(
-                maintainability=50.0,
-                testability=50.0,
-                readability=50.0,
-                performance=50.0,
-                security=50.0,
-                overall=50.0,
+            health_score = HealthScore(
+                score=50.0,
+                grade="C",
+                summary="Analysis failed. Defaulting to neutral score.",
+                metrics={
+                    "maintainability": 50.0,
+                    "testability": 50.0,
+                    "readability": 50.0,
+                    "performance": 50.0,
+                    "security": 50.0,
+                },
                 breakdown={
                     "maintainability": "Analysis failed",
                     "testability": "Analysis failed",
                     "readability": "Analysis failed",
                     "performance": "Analysis failed",
-                    "security": "Analysis failed"
-                }
+                    "security": "Analysis failed",
+                },
             )
         
         # Cache result only if successful (not error fallback)
-        if quality_metrics.overall > 50:  # Check if it's not the default error values
-            await cache.set(cache_key, quality_metrics.dict(), expire=3600)  # 1 hour cache
+        if health_score.score > 50:
+            await cache.set(cache_key, health_score.dict(), expire=3600)
         
         processing_time = time.time() - start_time
-        print(f"  ✅ Quality metrics completed in {processing_time:.2f}s ({tokens_used} tokens)")
+        print(f"  ✅ Health score completed in {processing_time:.2f}s ({tokens_used} tokens)")
         
-        return quality_metrics
+        return health_score
     
     async def generate_architecture_diagram(
         self,
@@ -353,104 +351,6 @@ class CodeAnalysisService:
         
         return architecture_diagram
     
-    async def generate_mentor_insights(
-        self,
-        code: str,
-        language: str,
-        file_path: str
-    ) -> MentorInsight:
-        """
-        Generate personalized mentoring insights and learning path.
-        
-        Args:
-            code: Source code to analyze
-            language: Programming language
-            file_path: File path for context
-            
-        Returns:
-            MentorInsight object with skill assessment and learning recommendations
-        """
-        # Check cache first
-        cache_key = cache.generate_cache_key(
-            "mentor_insights",
-            file_path,
-            code[:200],
-            language
-        )
-        
-        cached_insights = await cache.get(cache_key)
-        if cached_insights:
-            # Only use cache if it's a successful result (not error fallback)
-            cached_result = MentorInsight(**cached_insights)
-            if len(cached_result.learning_path) > 0 or len(cached_result.strengths) > 0:  # Check if it has actual data
-                print(f"  ♻️  Cache hit for mentor insights: {file_path}")
-                return cached_result
-            else:
-                print(f"  🗑️  Cache miss (error response): {file_path}")
-                await cache.delete(cache_key)  # Clear bad cache entry
-        
-        print(f"  🧑‍🏫 Generating mentor insights for: {file_path}")
-        start_time = time.time()
-        
-        # Generate prompt
-        prompt = self._create_mentor_prompt(code, language, file_path)
-        
-        # Call OpenAI
-        response = await asyncio.to_thread(
-            self.client.chat.completions.create,
-            model=self.gpt4_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert coding mentor and educator. Assess the skill level "
-                        "demonstrated in code and create a personalized learning path. Consider "
-                        "code patterns used, best practices adherence, complexity handled, and "
-                        "problem-solving approach. Provide beginner/intermediate/advanced classification "
-                        "with specific guidance, learning resources, and coding challenges. "
-                        "Always respond with valid JSON."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.3,
-            max_tokens=2000
-        )
-        
-        # Parse response
-        content = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens
-        self.total_tokens_used += tokens_used
-        
-        try:
-            cleaned_content = self._clean_json_response(content)
-            insights_data = json.loads(cleaned_content)
-            mentor_insights = MentorInsight(**insights_data)
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"  ❌ Error parsing mentor insights response: {e}")
-            # Return default insights on error
-            mentor_insights = MentorInsight(
-                skill_level="intermediate",
-                strengths=["Code structure"],
-                weaknesses=["Error handling"],
-                learning_path=[],
-                challenges=[],
-                estimated_time="2-4 weeks",
-                next_milestone="Improve error handling patterns"
-            )
-        
-        # Cache result only if successful (not error fallback)
-        if len(mentor_insights.learning_path) > 0 or len(mentor_insights.strengths) > 0:  # Check if it has actual data
-            await cache.set(cache_key, mentor_insights.dict(), expire=3600)  # 1 hour cache
-        
-        processing_time = time.time() - start_time
-        print(f"  ✅ Mentor insights completed in {processing_time:.2f}s ({tokens_used} tokens)")
-        
-        return mentor_insights
-    
     def _create_code_review_prompt(self, code: str, language: str, file_path: str) -> str:
         """Create prompt for code review analysis."""
         return f"""
@@ -525,9 +425,9 @@ Provide JSON response with this exact structure:
 """
     
     def _create_quality_metrics_prompt(self, code: str, language: str, file_path: str) -> str:
-        """Create prompt for quality metrics calculation."""
+        """Create prompt for health score breakdown."""
         return f"""
-You are a code quality expert. Calculate comprehensive quality metrics for this {language} code:
+You are a code quality expert. Score this {language} code across five dimensions:
 
 File: {file_path}
 Code:
@@ -584,7 +484,6 @@ Provide JSON response with scores and detailed explanations:
   "readability": 90.0,
   "performance": 75.0,
   "security": 80.0,
-  "overall": 80.0,
   "breakdown": {{
     "maintainability": "Detailed explanation of maintainability score with specific examples",
     "testability": "Detailed explanation of testability score with specific examples",
@@ -601,8 +500,79 @@ Provide JSON response with scores and detailed explanations:
 - 60-69: Below average, significant improvements required
 - 0-59: Poor, major refactoring needed
 
-Calculate overall score as weighted average: Maintainability(25%) + Testability(20%) + Readability(20%) + Performance(20%) + Security(15%)
+Do not include any other fields beyond those shown.
 """
+
+    def _build_health_score(self, metrics_data: Dict[str, Any]) -> HealthScore:
+        metrics = {
+            "maintainability": float(metrics_data.get("maintainability", 0)),
+            "testability": float(metrics_data.get("testability", 0)),
+            "readability": float(metrics_data.get("readability", 0)),
+            "performance": float(metrics_data.get("performance", 0)),
+            "security": float(metrics_data.get("security", 0)),
+        }
+        breakdown = metrics_data.get("breakdown", {})
+        weights = {
+            "readability": 0.25,
+            "maintainability": 0.25,
+            "security": 0.20,
+            "performance": 0.15,
+            "testability": 0.15,
+        }
+        score = sum(metrics[key] * weight for key, weight in weights.items())
+        grade = self._grade_health_score(score)
+        summary = self._summarize_health_score(metrics)
+        return HealthScore(
+            score=round(score, 1),
+            grade=grade,
+            summary=summary,
+            metrics=metrics,
+            breakdown=breakdown,
+        )
+
+    def apply_custom_weights(self, health_score: HealthScore, weights: Dict[str, float]) -> HealthScore:
+        normalized = {
+            "readability": float(weights.get("readability", 0)),
+            "maintainability": float(weights.get("maintainability", 0)),
+            "security": float(weights.get("security", 0)),
+            "performance": float(weights.get("performance", 0)),
+            "testability": float(weights.get("testability", 0)),
+        }
+        total = sum(normalized.values())
+        if total <= 0:
+            return health_score
+        normalized = {k: v / total for k, v in normalized.items()}
+        new_score = 0.0
+        for metric_name, metric_value in health_score.metrics.items():
+            new_score += metric_value * normalized.get(metric_name, 0)
+        return HealthScore(
+            score=round(new_score, 1),
+            grade=self._grade_health_score(new_score),
+            summary=self._summarize_health_score(health_score.metrics),
+            metrics=health_score.metrics,
+            breakdown=health_score.breakdown,
+        )
+
+    @staticmethod
+    def _grade_health_score(score: float) -> str:
+        if score >= 90:
+            return "A"
+        if score >= 80:
+            return "B"
+        if score >= 70:
+            return "C"
+        if score >= 60:
+            return "D"
+        return "F"
+
+    @staticmethod
+    def _summarize_health_score(metrics: Dict[str, float]) -> str:
+        sorted_metrics = sorted(metrics.items(), key=lambda item: item[1], reverse=True)
+        top_metric, top_score = sorted_metrics[0]
+        low_metric, low_score = sorted_metrics[-1]
+        if abs(top_score - low_score) < 5:
+            return "Balanced quality profile across all dimensions."
+        return f"Strong {top_metric} with room to improve {low_metric}."
     
     def _create_architecture_prompt(self, code: str, language: str, file_path: str) -> str:
         """Create prompt for architecture diagram generation."""
@@ -688,102 +658,6 @@ Provide JSON response with detailed graph structure:
 - Choose the best layout for the component structure
 """
     
-    def _create_mentor_prompt(self, code: str, language: str, file_path: str) -> str:
-        """Create prompt for mentor insights generation."""
-        return f"""
-You are an expert coding mentor and educator. Assess the skill level demonstrated in this {language} code and create a personalized learning path:
-
-File: {file_path}
-Code:
-```{language}
-{code}
-```
-
-## Skill Assessment Analysis:
-
-### Code Quality Indicators:
-- **Code Structure**: Organization, modularity, separation of concerns
-- **Best Practices**: Adherence to language conventions and industry standards
-- **Problem Solving**: Approach to complex problems and algorithmic thinking
-- **Design Patterns**: Usage of appropriate design patterns and architectural decisions
-- **Error Handling**: Robustness and defensive programming practices
-- **Testing**: Testability and testing considerations
-- **Documentation**: Code documentation and self-documenting practices
-
-### Skill Level Classification:
-- **Beginner**: Basic syntax, simple logic, minimal patterns
-- **Intermediate**: Good structure, some patterns, moderate complexity
-- **Advanced**: Complex patterns, optimization, architectural thinking
-
-### Learning Path Creation:
-- Identify specific skill gaps and areas for improvement
-- Create progressive learning modules with clear objectives
-- Provide practical coding challenges and exercises
-- Suggest relevant resources and documentation
-- Estimate realistic timeframes for skill development
-
-Provide JSON response:
-{{
-  "skill_level": "beginner|intermediate|advanced",
-  "strengths": [
-    "Specific strength with brief explanation (e.g., 'Excellent use of async/await patterns')"
-  ],
-  "weaknesses": [
-    "Specific weakness with brief explanation (e.g., 'Limited error handling coverage')"
-  ],
-  "learning_path": [
-    {{
-      "title": "Specific learning module title",
-      "description": "Detailed description of what will be learned and why it's important",
-      "resources": [
-        "https://specific-resource.com/topic",
-        "Book: 'Specific Book Title' by Author",
-        "Practice: 'Hands-on Exercise Description'"
-      ],
-      "estimated_time": "Realistic time estimate (e.g., '3-5 hours', '1 week')",
-      "difficulty": "beginner|intermediate|advanced",
-      "prerequisites": ["Required knowledge or skills"],
-      "learning_objectives": [
-        "Specific objective 1",
-        "Specific objective 2"
-      ],
-      "practical_exercises": [
-        "Exercise 1: Description of hands-on practice",
-        "Exercise 2: Description of coding challenge"
-      ]
-    }}
-  ],
-  "challenges": [
-    {{
-      "title": "Challenge project title",
-      "description": "Detailed description of the challenge and its learning value",
-      "difficulty": "beginner|intermediate|advanced",
-      "estimated_time": "Realistic completion time",
-      "skills_practiced": ["specific skill 1", "specific skill 2"],
-      "starter_code": "// TODO: implement specific functionality",
-      "success_criteria": [
-        "Criterion 1: Specific measurable outcome",
-        "Criterion 2: Quality standard to meet"
-      ],
-      "hints": [
-        "Helpful hint 1",
-        "Helpful hint 2"
-      ]
-    }}
-  ],
-  "estimated_time": "Overall time estimate for complete learning path",
-  "next_milestone": "Specific, achievable next milestone with clear success criteria",
-  "career_advice": "Brief career development advice based on current skill level and code analysis"
-}}
-
-## Important Guidelines:
-- Be specific and actionable in all recommendations
-- Provide realistic time estimates based on typical learning curves
-- Include diverse learning resources (documentation, books, videos, hands-on practice)
-- Create progressive challenges that build on each other
-- Focus on practical, applicable skills
-- Consider the developer's current level and provide appropriate scaffolding
-"""
 
 
 # Global instance
