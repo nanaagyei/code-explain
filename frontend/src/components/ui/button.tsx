@@ -39,4 +39,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
+// buttonVariants is consumed by other modules; not a React component export
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants };

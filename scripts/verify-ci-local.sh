@@ -1,20 +1,31 @@
 #!/usr/bin/env bash
 # Mirror .github/workflows/ci.yml locally before push.
 #
-# Branch protection (merge gate, not "block opening PR"): GitHub repo Settings ->
-# Branches -> Add rule for `dev` -> Require status checks -> enable: backend, frontend,
-# cli, vscode-extension (job names from the CI workflow).
+# Branch protection (merge gate): GitHub repo Settings -> Branches -> rule for `dev`
+# -> Require status checks -> backend, frontend, cli, vscode-extension.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "== backend =="
+BACKEND_PY=()
+if [[ -x "$ROOT/backend/.venv/bin/python" ]]; then
+  BACKEND_PY=("$ROOT/backend/.venv/bin/python")
+elif command -v python3.11 >/dev/null 2>&1; then
+  BACKEND_PY=(python3.11)
+else
+  BACKEND_PY=(python3)
+fi
+
+PIP() { "${BACKEND_PY[@]}" -m pip "$@"; }
+PYTEST() { "${BACKEND_PY[@]}" -m pytest "$@"; }
+
+echo "== backend (python: ${BACKEND_PY[*]}) =="
 (
   cd backend
-  pip install -r requirements.txt
-  pytest tests -q
+  PIP install -r requirements.txt
+  PYTEST tests -q
 )
 
 echo "== frontend =="

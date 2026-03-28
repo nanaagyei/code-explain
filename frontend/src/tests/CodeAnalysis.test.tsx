@@ -14,14 +14,16 @@ import { BrowserRouter } from 'react-router-dom';
 import CodeReview from '../components/CodeReview';
 import QualityMetrics from '../components/QualityMetrics';
 import ArchitectureDiagram from '../components/ArchitectureDiagram';
+import type { FC, ReactNode } from 'react';
 import { apiClient } from '../api/client';
+import { vi } from 'vitest';
 
 // Mock the API client
-jest.mock('../api/client');
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+vi.mock('../api/client');
+const mockApiClient = vi.mocked(apiClient);
 
 // Test wrapper with providers
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const TestWrapper: FC<{ children: ReactNode }> = ({ children }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -122,7 +124,7 @@ const mockArchitectureData = {
 
 describe('CodeReview Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders code review component with generate button', () => {
@@ -132,8 +134,8 @@ describe('CodeReview Component', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText('Generate Code Review')).toBeInTheDocument();
-    expect(screen.getByText('AI-powered code analysis for security vulnerabilities, performance issues, and best practices.')).toBeInTheDocument();
+    expect(screen.getByText('Generate Review')).toBeInTheDocument();
+    expect(screen.getByText('AI-powered security, performance, and best practices analysis')).toBeInTheDocument();
   });
 
   test('generates code review on button click', async () => {
@@ -145,7 +147,7 @@ describe('CodeReview Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -162,7 +164,7 @@ describe('CodeReview Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -182,7 +184,7 @@ describe('CodeReview Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -193,7 +195,7 @@ describe('CodeReview Component', () => {
 
 describe('QualityMetrics Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders health score component', () => {
@@ -271,7 +273,7 @@ describe('QualityMetrics Component', () => {
 
 describe('ArchitectureDiagram Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders architecture diagram component', () => {
@@ -281,8 +283,8 @@ describe('ArchitectureDiagram Component', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText('Generate Architecture Diagram')).toBeInTheDocument();
-    expect(screen.getByText('Interactive visualization of code components, relationships, and data flow.')).toBeInTheDocument();
+    expect(screen.getByText('Generate Diagram')).toBeInTheDocument();
+    expect(screen.getByText('Interactive code structure visualization')).toBeInTheDocument();
   });
 
   test('generates architecture diagram on button click', async () => {
@@ -294,7 +296,7 @@ describe('ArchitectureDiagram Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Architecture Diagram');
+    const generateButton = screen.getByText('Generate Diagram');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -311,7 +313,7 @@ describe('ArchitectureDiagram Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Architecture Diagram');
+    const generateButton = screen.getByText('Generate Diagram');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -329,7 +331,7 @@ describe('ArchitectureDiagram Component', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Architecture Diagram');
+    const generateButton = screen.getByText('Generate Diagram');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -352,7 +354,7 @@ describe('API Integration', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -372,7 +374,7 @@ describe('API Integration', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     // Should show loading state
@@ -389,7 +391,7 @@ describe('API Integration', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     fireEvent.click(generateButton);
 
     await waitFor(() => {
@@ -406,7 +408,7 @@ describe('Component Accessibility', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     expect(generateButton).toHaveAttribute('type', 'button');
   });
 
@@ -439,11 +441,11 @@ describe('Performance Optimization', () => {
     );
 
     // Component should still be rendered
-    expect(screen.getByText('Generate Code Review')).toBeInTheDocument();
+    expect(screen.getByText('Generate Review')).toBeInTheDocument();
   });
 
   test('API calls are debounced', async () => {
-    const mockFn = jest.fn().mockResolvedValue(mockCodeReviewData);
+    const mockFn = vi.fn().mockResolvedValue(mockCodeReviewData);
     mockApiClient.generateCodeReview = mockFn;
 
     render(
@@ -452,7 +454,7 @@ describe('Performance Optimization', () => {
       </TestWrapper>
     );
 
-    const generateButton = screen.getByText('Generate Code Review');
+    const generateButton = screen.getByText('Generate Review');
     
     // Click multiple times rapidly
     fireEvent.click(generateButton);

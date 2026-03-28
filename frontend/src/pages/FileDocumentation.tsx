@@ -91,8 +91,8 @@ export default function FileDocumentation() {
     try {
       const t = await apiClient.getFileTrace(parseInt(repositoryId), parseInt(fileId));
       setTraceData(t);
-    } catch (e) {
-      console.error('Trace failed:', e);
+    } catch (err) {
+      console.error('Trace failed:', err);
     } finally {
       setTraceLoading(false);
     }
@@ -121,7 +121,7 @@ export default function FileDocumentation() {
                 setExplanation(fullExplanation);
               }
               if (data.done) break;
-            } catch (e) {
+            } catch {
               // Skip invalid JSON
             }
           }

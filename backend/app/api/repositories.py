@@ -54,20 +54,26 @@ async def _emit_repository_event(
     *,
     user_id: int,
     event_name: str,
-    repository: Repository,
+    repository: Repository | None = None,
+    repository_data: Dict[str, Any] | None = None,
     extra: Dict[str, Any] | None = None,
 ) -> None:
-    payload: Dict[str, Any] = {
-        "event": event_name,
-        "repository": {
+    """Emit webhook event. Use repository_data when repo may be expired after commit."""
+    if repository_data:
+        repo_payload = repository_data
+    elif repository:
+        await db.refresh(repository)
+        repo_payload = {
             "id": repository.id,
             "name": repository.name,
             "status": repository.status,
             "processed_files": repository.processed_files,
             "total_files": repository.total_files,
             "updated_at": repository.updated_at.isoformat() if repository.updated_at else None,
-        },
-    }
+        }
+    else:
+        return
+    payload: Dict[str, Any] = {"event": event_name, "repository": repo_payload}
     if extra:
         payload["extra"] = extra
     await enqueue_webhook_deliveries(
@@ -238,9 +244,11 @@ async def create_repository_from_github(
 
         await _ensure_ai_usage_allowed(current_user, db)
         
-        # Clone and extract files
+        # Clone and extract files (run in thread to avoid blocking event loop)
         try:
-            repo_name, files = process_github_repository(github_url, max_files)
+            repo_name, files = await asyncio.to_thread(
+                process_github_repository, github_url, max_files
+            )
             print(f"   ✓ Extracted {len(files)} files from {repo_name}")
         except ValueError as e:
             error_msg = str(e)
@@ -1032,13 +1040,22 @@ async def mark_repository_failed(
             status_code=400,
             detail=f"Can only mark repositories stuck in 'processing' as failed. Current status: {repo.status}",
         )
+    # Capture before commit to avoid expired object access in webhook
+    repo_data = {
+        "id": repo.id,
+        "name": repo.name,
+        "status": "failed",
+        "processed_files": repo.processed_files,
+        "total_files": repo.total_files,
+        "updated_at": repo.updated_at.isoformat() if repo.updated_at else None,
+    }
     repo.status = "failed"
     await db.commit()
     await _emit_repository_event(
         db,
         user_id=repo.user_id,
         event_name="repository.failed",
-        repository=repo,
+        repository_data=repo_data,
         extra={"reason": "manual_mark_failed"},
     )
     print(f"   ✓ Repository {repo.name} (ID: {repo.id}) marked as failed (was stuck in processing)")

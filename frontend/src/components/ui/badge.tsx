@@ -27,4 +27,6 @@ function Badge({ className, variant, ...props }: BadgeProps) {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
+// badgeVariants is consumed by other modules; not a React component export
+// eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants };

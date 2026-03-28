@@ -6,7 +6,8 @@ import { useDropzone } from 'react-dropzone';
 import { apiClient } from '../api/client';
 import BentoChat from '../components/BentoChat';
 import { PromptTemplateSelector } from '../components/PromptTemplateSelector';
-import OnboardingTour, { useOnboardingTour } from '../components/OnboardingTour';
+import OnboardingTour from '../components/OnboardingTour';
+import { useOnboardingTour } from '../hooks/useOnboardingTour';
 import type { Repository } from '../types/index';
 import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 import {

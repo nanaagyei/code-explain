@@ -216,30 +216,3 @@ export default function OnboardingTour({ onComplete, isOpen }: OnboardingTourPro
     </div>
   );
 }
-
-// Hook to manage tour state
-export function useOnboardingTour() {
-  const [showTour, setShowTour] = useState(false);
-  const TOUR_KEY = 'codeexplain_onboarding_completed';
-
-  useEffect(() => {
-    const hasCompletedTour = localStorage.getItem(TOUR_KEY);
-    if (!hasCompletedTour) {
-      // Show tour after a short delay
-      const timer = setTimeout(() => setShowTour(true), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const completeTour = () => {
-    localStorage.setItem(TOUR_KEY, 'true');
-    setShowTour(false);
-  };
-
-  const resetTour = () => {
-    localStorage.removeItem(TOUR_KEY);
-    setShowTour(true);
-  };
-
-  return { showTour, completeTour, resetTour };
-}

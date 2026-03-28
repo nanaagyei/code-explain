@@ -35,5 +35,7 @@ test('renders analytics overview cards', async () => {
     expect(screen.getByText('Advanced Analytics')).toBeInTheDocument();
   });
   expect(screen.getByText('Repositories')).toBeInTheDocument();
-  expect(screen.getByText('2')).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
 });
