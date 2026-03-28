@@ -1,9 +1,10 @@
 import { CodeXplainClient } from '../api/client';
 import { getApiToken, getApiBaseUrl } from './auth';
-import { formatError } from '../output/formatters';
+import { formatError, writeOutput } from '../output/formatters';
 
 export interface PrChecklistOptions {
   output: 'markdown' | 'json';
+  out?: string;
   quiet: boolean;
 }
 
