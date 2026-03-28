@@ -121,7 +121,7 @@ export default function FileDocumentation() {
                 setExplanation(fullExplanation);
               }
               if (data.done) break;
-            } catch (e) {
+            } catch {
               // Skip invalid JSON
             }
           }
