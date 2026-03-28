@@ -13,8 +13,8 @@ cd "$ROOT"
 echo "== backend =="
 (
   cd backend
-  python3 -m pip install -r requirements.txt
-  python3 -m pytest tests -q
+  pip install -r requirements.txt
+  pytest tests -q
 )
 
 echo "== frontend =="
