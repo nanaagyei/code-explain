@@ -49,7 +49,7 @@ cd codeexplain
 
 # Verify you're in the correct directory
 ls -la
-# Should see: backend/, frontend/, docs/, docker-compose.yml
+# Should see: backend/, frontend/, docs/, compose.yaml
 ```
 
 ### **Step 2: Environment Configuration**

@@ -37,7 +37,7 @@ Edit `backend/.env` and set:
 - **DATABASE_URL** — Must match Docker Compose (see below)
 - **SECRET_KEY** — Use `openssl rand -hex 32` for production
 
-**Important:** The project `docker-compose.yml` uses:
+**Important:** The project `compose.yaml` uses:
 - PostgreSQL on host port **5433** (mapped from container 5432)
 - Password: **devpassword123**
 - Database: **codeexplain_db**

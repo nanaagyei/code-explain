@@ -263,7 +263,7 @@ pip install python-dotenv pydantic-settings
 
 **Step 3: Docker Setup (Local Services)**
 
-Create `docker-compose.yml` in project root:
+Create `compose.yaml` in project root:
 
 ```yaml
 version: '3.8'
