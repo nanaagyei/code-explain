@@ -3,7 +3,7 @@ Chat API endpoints for AI-powered Q&A.
 
 Provides streaming responses for real-time typewriter effect.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -12,9 +12,12 @@ import json
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.services.chat_service import get_chat_service
+from app.core.config import get_settings
+from app.core.rate_limit import limiter
 
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+settings = get_settings()
 
 
 class ChatRequest(BaseModel):
@@ -34,8 +37,18 @@ class FunctionDocRequest(BaseModel):
     name: str
 
 
+class ExplainFunctionRequest(BaseModel):
+    """Explain function/class request with context"""
+    code: str
+    name: str
+    context: Optional[str] = None
+    language: str = "python"
+
+
 @router.post("/stream")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def stream_chat(
+    http_request: Request,
     request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -75,7 +88,9 @@ async def stream_chat(
 
 
 @router.post("/explain")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def explain_code(
+    http_request: Request,
     request: QuickExplainRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -109,7 +124,9 @@ async def explain_code(
 
 
 @router.post("/document")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
 async def document_function(
+    http_request: Request,
     request: FunctionDocRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -134,6 +151,44 @@ async def document_function(
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@router.post("/explain-function")
+@limiter.limit(f"{settings.analysis_rate_limit_per_minute}/minute")
+async def explain_function(
+    http_request: Request,
+    request: ExplainFunctionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Stream explanation for a function/class with context.
+    """
+    chat_service = get_chat_service()
+
+    async def event_generator():
+        try:
+            async for chunk in chat_service.explain_function(
+                request.code,
+                request.name,
+                request.context,
+                request.language
+            ):
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            yield f"data: {json.dumps({'done': True})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",

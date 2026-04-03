@@ -2,7 +2,7 @@
 
 **AI-Powered Code Documentation & Analysis Platform**
 
-Transform your code documentation with AI-powered analysis, interactive diagrams, and intelligent insights. Support for 20+ programming languages with modern, responsive design.
+Transform your code documentation with AI-powered analysis, interactive diagrams, and intelligent insights. Deep support for Python, JavaScript, TypeScript, Go, Rust, Java, and C/C++.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -17,7 +17,7 @@ Visit our live site: **[CodeXplain](https://code-xplain.up.railway.app)**
 
 ### 🤖 **AI-Powered Documentation**
 - **Automatic Generation**: Comprehensive documentation for functions, classes, and modules
-- **Multi-Language Support**: Python, JavaScript, TypeScript, Java, C++, Go, Rust, and more
+- **Multi-Language Support**: Python, JavaScript, TypeScript, Go, Rust, Java, and C/C++
 - **Custom Templates**: Tailor documentation style to your team's preferences
 - **Real-time Processing**: Fast, on-demand analysis with intelligent caching
 
@@ -27,11 +27,11 @@ Visit our live site: **[CodeXplain](https://code-xplain.up.railway.app)**
 - **Best Practices**: Suggest code improvements and standards
 - **Overall Scoring**: Quantified assessment of code quality
 
-### 📊 **Quality Metrics**
-- **5-Dimensional Scoring**: Maintainability, Testability, Readability, Performance, Security
+### 📊 **Health Score**
+- **Single Score**: Aggregated health score with detailed breakdown
+- **5-Dimensional Detail**: Maintainability, Testability, Readability, Performance, Security
 - **Actionable Insights**: Specific recommendations for improvement
 - **Historical Tracking**: Monitor quality improvements over time
-- **Team Comparisons**: Compare metrics across team members
 
 ### 🏗️ **Interactive Architecture Diagrams**
 - **Visual Code Structure**: Interactive diagrams showing component relationships
@@ -39,23 +39,16 @@ Visit our live site: **[CodeXplain](https://code-xplain.up.railway.app)**
 - **Custom Node Types**: Different styles for functions, classes, modules, and APIs
 - **Export Options**: Save as PNG, SVG, or interactive formats
 
-### 🎓 **AI Coding Mentor**
-- **Skill Assessment**: Personalized evaluation of your coding abilities
-- **Learning Paths**: Customized recommendations based on your code patterns
-- **Challenges**: Practice exercises tailored to your skill level
-- **Progress Tracking**: Monitor your improvement over time
-
-### ⚡ **Bulk Operations**
-- **Multi-Repository Processing**: Analyze multiple repositories simultaneously
-- **Batch Analysis**: Process code review, quality metrics, and architecture diagrams in parallel
-- **GitHub Integration**: Seamlessly import and analyze GitHub repositories
-- **Progress Monitoring**: Real-time updates on batch processing
-
 ### 🔧 **Advanced Features**
 - **Custom AI Prompts**: Configure documentation style and focus areas
 - **API Key Management**: Use your own OpenAI API keys for enhanced control
 - **Export Options**: Generate documentation in multiple formats (Markdown, PDF, HTML)
 - **Real-time Collaboration**: Live updates and team sharing
+
+### 💳 **Transparent Billing**
+- **Prepaid Credit Wallets**: Sell Stripe-powered credit packs so users can run AI without uploading an API key
+- **Bring-Your-Own Key**: Users with a personal OpenAI key bypass platform credits entirely
+- **In-App Visibility**: Dashboard cards show balance, usage history, and shortcuts to manage payment methods
 
 ## 🚀 Quick Start
 
@@ -123,7 +116,6 @@ npm run dev
 - **[AI Code Review](docs/docs/features/ai-code-review.md)** - Security analysis and performance insights
 - **[Quality Metrics](docs/docs/features/quality-metrics.md)** - 5-dimensional scoring system
 - **[Architecture Diagrams](docs/docs/features/architecture-diagrams.md)** - Interactive code visualization
-- **[AI Mentor](docs/docs/features/ai-mentor.md)** - Personalized learning paths
 
 ### 🔧 **Development Guides**
 - **[API Reference](docs/docs/api/)** - Complete API documentation
@@ -163,7 +155,7 @@ Visit our comprehensive documentation site: **[CodeXplain Docs](https://code-exp
 1. **Create Repository**: Upload files or import from GitHub
 2. **Generate Documentation**: AI automatically creates comprehensive docs
 3. **Review Code**: Get security and performance analysis
-4. **View Quality Metrics**: See 5-dimensional quality scores
+4. **View Health Score**: See the headline score and detailed breakdown
 5. **Explore Architecture**: Interactive diagrams of code structure
 
 ### **AI-Powered Analysis**
@@ -180,17 +172,6 @@ def calculate_fibonacci(n):
 # - Performance issues (exponential time complexity)
 # - Quality metrics (maintainability, testability, etc.)
 # - Architecture diagram showing function relationships
-```
-
-### **Bulk Operations**
-```bash
-# Process multiple repositories
-curl -X POST "http://localhost:8000/repositories/batch-analyze" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "repository_ids": [1, 2, 3],
-    "analysis_types": ["code_review", "quality_metrics", "architecture"]
-  }'
 ```
 
 ## 🔧 Configuration
@@ -212,7 +193,18 @@ OPENAI_API_KEY=your-openai-api-key-here
 HOST=0.0.0.0
 PORT=8000
 DEBUG=True
+
+# Billing / Stripe
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/billing/cancel
+BILLING_TOKENS_PER_CREDIT=1000
+BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
 ```
+
+- Stripe variables enable the prepaid credit experience; omit them if you only want to support bring-your-own OpenAI keys.
 
 ### **Custom AI Prompts**
 Configure documentation style in Settings:

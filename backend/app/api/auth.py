@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,7 +14,8 @@ from app.core.security import (
 )
 from app.core.config import get_settings
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import UserCreate, UserResponse, Token, TokenWithUser
+from app.core.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 settings = get_settings()
@@ -70,8 +72,9 @@ async def get_current_user(
     return user
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.auth_rate_limit_per_minute}/minute")
+async def register(request: Request, user: UserCreate, db: AsyncSession = Depends(get_db)):
     """
     Register a new user.
     
@@ -116,23 +119,29 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(db_user)
     
-    return db_user
+    # Return JSONResponse so slowapi can inject rate-limit headers
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=UserResponse.model_validate(db_user).model_dump(mode="json"),
+    )
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenWithUser)
+@limiter.limit(f"{settings.auth_rate_limit_per_minute}/minute")
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Login and get JWT access token.
+    Login and get JWT access token with user data.
     
     Args:
         form_data: OAuth2 form with username and password
         db: Database session
         
     Returns:
-        JWT access token
+        JWT access token and user information
         
     Raises:
         HTTPException: If credentials are invalid
@@ -164,7 +173,14 @@ async def login(
         expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Return JSONResponse so slowapi can inject rate-limit headers
+    return JSONResponse(
+        content={
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse.model_validate(user).model_dump(mode="json"),
+        }
+    )
 
 
 @router.get("/me", response_model=UserResponse)

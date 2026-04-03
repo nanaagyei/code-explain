@@ -34,6 +34,10 @@ class Repository(Base):
     meta_info = Column(JSON, nullable=True)  # Renamed from 'metadata' (reserved keyword)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    total_tokens_used = Column(Integer, default=0)
+    total_credits_charged = Column(Integer, default=0)
+    billing_currency = Column(String(10), default="usd")
+    last_billed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     user = relationship("User", back_populates="repositories")
@@ -74,11 +78,14 @@ class CodeFile(Base):
     documentation = Column(JSON, nullable=True)  # Structured docs
     complexity_score = Column(Integer, nullable=True)
     code_review = Column(JSON, nullable=True)  # Security vulnerabilities, performance issues, best practices
-    quality_metrics = Column(JSON, nullable=True)  # 5-metric scoring system
+    quality_metrics = Column(JSON, nullable=True)  # Health Score with detailed breakdown
     architecture_data = Column(JSON, nullable=True)  # Component relationships, dependencies, data flow
     mentor_insights = Column(JSON, nullable=True)  # Skill level, learning suggestions, challenges
     status = Column(String, default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
+    tokens_used = Column(Integer, default=0)
+    credits_charged = Column(Integer, default=0)
+    billing_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -87,3 +94,25 @@ class CodeFile(Base):
     
     def __repr__(self):
         return f"<CodeFile(id={self.id}, path='{self.file_path}', status='{self.status}')>"
+
+
+class SavedExploration(Base):
+    """
+    Saved exploration session that can be shared via link.
+    """
+    __tablename__ = "saved_explorations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    share_id = Column(String(36), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    repository_id = Column(Integer, ForeignKey("repositories.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    state = Column(JSON, nullable=True)
+    is_public = Column(Integer, default=1)
+    view_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    user = relationship("User")
+    repository = relationship("Repository")

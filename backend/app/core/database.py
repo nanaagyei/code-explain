@@ -47,13 +47,19 @@ def _get_engine() -> AsyncEngine:
         database_url = _get_database_url()
         
         # Create async engine for PostgreSQL
+        # Note: pool_pre_ping helps verify connections are still alive
         _engine = create_async_engine(
             database_url,
             echo=debug,  # Log SQL queries in debug mode
             future=True,
             pool_pre_ping=True,  # Verify connections before using them
             pool_size=10,  # Connection pool size
-            max_overflow=20  # Max connections beyond pool_size
+            max_overflow=20,  # Max connections beyond pool_size
+            connect_args={
+                "server_settings": {
+                    "application_name": "codeexplain_backend"
+                }
+            }
         )
     return _engine
 

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { CSSProperties } from 'react';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 import { 
   ChatBubbleLeftRightIcon,
   CpuChipIcon
@@ -127,11 +128,12 @@ export default function BentoChat() {
       }
     } catch (error) {
       console.error('Chat error:', error);
+      const errorMessage = getUserFriendlyError(error, ErrorContexts.chat);
       setMessages(prev => {
         const newMessages = [...prev];
         newMessages[newMessages.length - 1] = {
           role: 'assistant',
-          content: 'Failed to get response. Please try again.',
+          content: errorMessage,
           isTyping: false
         };
         return newMessages;
@@ -205,7 +207,7 @@ export default function BentoChat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-accent-100 rounded-2xl flex items-center justify-center">
+                <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center">
                   <ChatBubbleLeftRightIcon className="w-10 h-10 text-blue-600 animate-float" />
                 </div>
                 <div>

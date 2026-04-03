@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../api/client';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
+import { ArrowLeft } from 'lucide-react';
 
 type AuthMode = 'login' | 'register';
 
@@ -46,7 +48,10 @@ export default function Auth() {
       apiClient.login(username, password),
     onSuccess: ({ user, access_token }) => {
       login(user, access_token);
-      navigate('/dashboard');
+      // Use setTimeout to ensure state update propagates before navigation
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 0);
     },
   });
 
@@ -95,39 +100,50 @@ export default function Auth() {
   const isLoading = mode === 'login' ? loginMutation.isPending : registerMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-white flex">
-      {/* Left Side - Auth Forms */}
+    <div className="min-h-screen bg-page flex">
+      {/* Left – Auth forms */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 py-8 sm:py-12">
         <div className="mx-auto w-full max-w-sm lg:w-96">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-              <span className="text-white text-xl font-bold">C</span>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-11 h-11 bg-charcoal-950 rounded-xl flex items-center justify-center">
+              <span className="text-white font-display font-bold text-xl">C</span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">CodeXplain</h1>
-              <p className="text-xs text-gray-500 font-medium">AI-Powered Code Documentation</p>
+              <h1 className="font-display font-bold text-2xl text-charcoal-950 tracking-tight">CodeXplain</h1>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">AI‑powered code documentation</p>
             </div>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="flex bg-gray-100 rounded-xl p-1 mb-8">
+          {mode === 'register' && (
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-charcoal-950 transition min-h-[44px]"
+            >
+              <ArrowLeft className="w-4 h-4" aria-hidden />
+              Back to Sign In
+            </button>
+          )}
+
+          <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
             <button
               onClick={() => switchMode('login')}
-              className={`flex-1 py-2 px-4 text-sm font-semibold rounded-lg transition-all duration-300 ${
+              type="button"
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 mode === 'login'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-charcoal-950 shadow-sm'
+                  : 'text-slate-600 hover:text-charcoal-950'
               }`}
             >
               Sign In
             </button>
             <button
               onClick={() => switchMode('register')}
-              className={`flex-1 py-2 px-4 text-sm font-semibold rounded-lg transition-all duration-300 ${
+              type="button"
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 mode === 'register'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-charcoal-950 shadow-sm'
+                  : 'text-slate-600 hover:text-charcoal-950'
               }`}
             >
               Sign Up
@@ -146,7 +162,7 @@ export default function Auth() {
             >
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                  <label htmlFor="login-username" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="login-username" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Username
                   </label>
                   <input
@@ -155,13 +171,13 @@ export default function Auth() {
                     value={loginData.username}
                     onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                     placeholder="Enter your username"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="login-password" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="login-password" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -171,7 +187,7 @@ export default function Auth() {
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                       required
-                      className="w-full px-4 py-3 pr-11 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                      className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                       placeholder="Enter your password"
                     />
                     <button
@@ -198,9 +214,9 @@ export default function Auth() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg"
+                  className="w-full py-3 px-4 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {isLoading ? 'Signing In...' : 'Sign In'}
+                  {isLoading ? 'Signing in…' : 'Sign In'}
                 </button>
               </form>
             </div>
@@ -215,7 +231,7 @@ export default function Auth() {
             >
               <form onSubmit={handleRegister} className="space-y-6">
                 <div>
-                  <label htmlFor="register-username" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="register-username" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Username
                   </label>
                   <input
@@ -224,13 +240,13 @@ export default function Auth() {
                     value={registerData.username}
                     onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                     placeholder="Choose a username"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="register-email" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="register-email" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Email
                   </label>
                   <input
@@ -239,13 +255,13 @@ export default function Auth() {
                     value={registerData.email}
                     onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                     placeholder="Enter your email"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="register-password" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="register-password" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -255,13 +271,13 @@ export default function Auth() {
                       value={registerData.password}
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                       required
-                      className="w-full px-4 py-3 pr-11 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                      className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                       placeholder="Create a password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors duration-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-charcoal-950 transition"
                       aria-label={showRegisterPassword ? 'Hide password' : 'Show password'}
                       tabIndex={-1}
                     >
@@ -280,7 +296,7 @@ export default function Auth() {
                 </div>
 
                 <div>
-                  <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-charcoal-950 mb-2">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -290,13 +306,13 @@ export default function Auth() {
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                       required
-                      className="w-full px-4 py-3 pr-11 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none font-medium"
+                      className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition outline-none font-medium text-charcoal-950"
                       placeholder="Confirm your password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors duration-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-charcoal-950 transition"
                       aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                       tabIndex={-1}
                     >
@@ -320,9 +336,9 @@ export default function Auth() {
                 <button
                   type="submit"
                   disabled={isLoading || registerData.password !== registerData.confirmPassword}
-                  className="w-full py-3 px-4 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-lg"
+                  className="w-full py-3 px-4 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                  {isLoading ? 'Creating account…' : 'Create account'}
                 </button>
               </form>
             </div>
@@ -339,20 +355,23 @@ export default function Auth() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-700 font-medium">
-                    {(currentError as Error)?.message || 'An error occurred'}
+                    {getUserFriendlyError(
+                      currentError,
+                      mode === 'login' ? ErrorContexts.login : ErrorContexts.register
+                    )}
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Additional Info */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-slate-600">
               {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
               <button
+                type="button"
                 onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-                className="ml-1 font-semibold text-blue-500 hover:text-blue-600 transition duration-200"
+                className="ml-1 font-semibold text-primary-600 hover:text-primary-700 transition"
               >
                 {mode === 'login' ? 'Sign up' : 'Sign in'}
               </button>
@@ -361,77 +380,38 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Right Side - Feature Showcase with Animated Orbs */}
-      <div className="hidden lg:flex lg:flex-1 bg-gray-100 relative overflow-hidden">
-        {/* Animated Gradient Orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Large Blue Orb - Top Right */}
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full opacity-20 animate-float-slow"></div>
-          
-          {/* Medium Purple Orb - Center Left */}
-          <div className="absolute top-1/2 -left-32 w-64 h-64 bg-purple-400 rounded-full opacity-15 animate-float-slower"></div>
-          
-          {/* Small Green Orb - Bottom Center */}
-          <div className="absolute -bottom-20 left-1/3 w-48 h-48 bg-green-400 rounded-full opacity-25 animate-pulse-slow"></div>
-          
-          {/* Tiny Orange Orb - Top Center */}
-          <div className="absolute top-20 left-1/2 w-32 h-32 bg-orange-400 rounded-full opacity-30 animate-glow"></div>
-        </div>
-        
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-12 text-gray-900">
+      <div className="hidden lg:flex lg:flex-1 bg-slate-100 relative overflow-hidden">
+        <div className="flex flex-col justify-center px-12 xl:px-16">
           <div className="max-w-md">
-            <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-8 shadow-glow">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-charcoal-950 rounded-xl flex items-center justify-center mb-8">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            
-            <h2 className="text-4xl font-bold mb-6 text-gray-900">
-              AI-Powered Code Documentation
+            <h2 className="font-display font-bold text-3xl xl:text-4xl mb-6 text-charcoal-950 tracking-tight">
+              AI‑powered code documentation
             </h2>
-            
-            <p className="text-lg text-gray-700 mb-8">
-              Transform your codebase into comprehensive documentation with the power of AI. 
-              Support for 8+ programming languages.
+            <p className="text-slate-600 mb-8 text-base">
+              Transform your codebase into clear, structured docs. Support for 8+ languages.
             </p>
-
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+            <div className="space-y-5">
+              {[
+                { title: 'Instant analysis', desc: 'Parse and understand your code in seconds' },
+                { title: 'GitHub integration', desc: 'Clone any public repository directly' },
+                { title: 'AI chat assistant', desc: 'Ask questions about your codebase' },
+              ].map(({ title, desc }) => (
+                <div key={title} className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-charcoal-950 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-charcoal-950">{title}</h3>
+                    <p className="text-sm text-slate-600 mt-0.5">{desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Instant Analysis</h3>
-                  <p className="text-sm text-gray-700">Parse and understand your code in seconds</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">GitHub Integration</h3>
-                  <p className="text-sm text-gray-700">Clone any public repository directly</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">AI Chat Assistant</h3>
-                  <p className="text-sm text-gray-700">Ask questions about your codebase</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

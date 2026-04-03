@@ -1,54 +1,47 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { getUserFriendlyError } from '../utils/errorMessages';
 import type { UserApiKey, UserApiKeyCreate, UserApiKeyUpdate } from '../types/index';
-import { 
-  Key, 
-  Cloud, 
-  Brain, 
-  Bot, 
-  CheckCircle2, 
-  Building2, 
+import { BackButton } from '../components/BackButton';
+import { TemplateManager } from '../components/TemplateManager';
+import { AnalyticsPanel } from '../components/AnalyticsPanel';
+import {
+  Key,
+  Cloud,
+  Brain,
+  Bot,
+  CheckCircle2,
+  Building2,
   Phone,
   BarChart3,
+  X,
   XCircle,
-  UserCircle,
-  Settings as SettingsIcon,
-  LogOut,
-  ChevronDown
+  CreditCard,
+  Wallet,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function Settings() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingKey, setEditingKey] = useState<UserApiKey | null>(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-
-    if (userMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [userMenuOpen]);
   const [newKey, setNewKey] = useState<UserApiKeyCreate>({
     name: '',
     provider: 'openai',
     api_key: '',
     is_active: true
+  });
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [qualityWeights, setQualityWeights] = useState({
+    readability: 0.25,
+    maintainability: 0.25,
+    security: 0.2,
+    performance: 0.15,
+    testability: 0.15,
   });
 
   // Fetch user's API keys
@@ -56,6 +49,61 @@ export default function Settings() {
     queryKey: ['user-api-keys'],
     queryFn: () => apiClient.getUserApiKeys(),
   });
+
+  // Billing (moved from Dashboard)
+  const { data: billingSummary } = useQuery({
+    queryKey: ['billing', 'summary'],
+    queryFn: () => apiClient.getBillingSummary(),
+    enabled: Boolean(user),
+    retry: false,
+  });
+  const { data: creditPacks } = useQuery({
+    queryKey: ['billing', 'packs'],
+    queryFn: () => apiClient.getCreditPacks(),
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: billingTransactions } = useQuery({
+    queryKey: ['billing', 'transactions'],
+    queryFn: () => apiClient.getBillingTransactions(),
+    enabled: Boolean(user),
+  });
+  const { data: webhooks } = useQuery({
+    queryKey: ['webhooks'],
+    queryFn: () => apiClient.listWebhookEndpoints(),
+  });
+  const saveWeightsMutation = useMutation({
+    mutationFn: () => apiClient.updateQualityProfile(qualityWeights),
+  });
+  const createWebhookMutation = useMutation({
+    mutationFn: () =>
+      apiClient.createWebhookEndpoint({
+        url: webhookUrl,
+        secret: webhookSecret,
+        events: ['repository.completed', 'repository.failed', 'analysis.completed'],
+      }),
+    onSuccess: () => {
+      setWebhookUrl('');
+      setWebhookSecret('');
+      queryClient.invalidateQueries({ queryKey: ['webhooks'] });
+    },
+  });
+  const deleteWebhookMutation = useMutation({
+    mutationFn: (id: number) => apiClient.deleteWebhookEndpoint(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['webhooks'] }),
+  });
+  const checkoutMutation = useMutation({
+    mutationFn: (packId: number) => apiClient.createCheckoutSession(packId),
+    onSuccess: (session) => {
+      window.open(session.url, '_blank', 'noopener,noreferrer');
+    },
+  });
+  const refreshBilling = () => {
+    queryClient.invalidateQueries({ queryKey: ['billing'], exact: false });
+  };
+  const formatCurrency = (amountCents: number, currency = 'usd') =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(amountCents / 100);
+  const creditValueFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
   // Add new API key mutation
   const addKeyMutation = useMutation({
@@ -112,102 +160,24 @@ export default function Settings() {
   const getProviderColor = (provider: string) => {
     switch (provider.toLowerCase()) {
       case 'openai': return 'bg-green-100 text-green-800 border-green-200';
-      case 'anthropic': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'anthropic': return 'bg-slate-100 text-slate-800 border-slate-200';
       case 'azure': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
-              <Link
-                to="/dashboard"
-                className="text-gray-600 hover:text-gray-900 transition duration-200 text-sm sm:text-base"
-              >
-                ← Back
-              </Link>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-lg sm:text-xl font-bold">C</span>
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
-                  <p className="text-xs text-gray-500 font-medium hidden sm:block">Manage your API keys and preferences</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* User Menu Dropdown */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition duration-200 border border-gray-200 cursor-pointer"
-              >
-                <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-blue-100 rounded-full flex-shrink-0">
-                  <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                </div>
-                <div className="hidden md:block text-left min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-[150px]">
-                    {user?.username || 'User'}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[150px]">
-                    {user?.email || ''}
-                  </p>
-                </div>
-                {/* Mobile: Show only icon and username */}
-                <div className="md:hidden text-left min-w-0">
-                  <p className="text-xs font-semibold text-gray-900 truncate max-w-[80px]">
-                    {user?.username || 'User'}
-                  </p>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ${userMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Menu */}
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
-                  <div className="px-4 py-3 border-b border-gray-100 md:hidden">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {user?.username || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate mt-1">
-                      {user?.email || ''}
-                    </p>
-                  </div>
-                  <Link
-                    to="/settings"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition duration-200"
-                  >
-                    <SettingsIcon className="w-5 h-5 text-gray-500" />
-                    <span>Settings</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      logout();
-                    }}
-                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition duration-200"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
+    <div className="min-h-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 lg:mb-8">
+          <BackButton to="/dashboard" label="Back to Dashboard" />
+          <div>
+            <h1 className="font-display font-bold text-xl sm:text-2xl text-charcoal-950">Settings</h1>
+            <p className="text-sm text-slate-600 mt-0.5">Manage API keys, billing, and preferences</p>
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* API Keys Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 lg:p-8">
+        <div id="api-keys" className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
             <div className="flex-1">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 flex items-center space-x-2">
@@ -336,50 +306,235 @@ export default function Settings() {
             <span>Usage Statistics</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-600 text-sm font-medium mb-1">Total API Calls</p>
-                  <p className="text-3xl font-bold text-blue-900">
+                  <p className="text-3xl font-bold text-slate-900">
                     {apiKeys?.reduce((sum, key) => sum + key.usage_count, 0) || 0}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                   <Phone className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-600 text-sm font-medium mb-1">Active Keys</p>
-                  <p className="text-3xl font-bold text-green-900">
+                  <p className="text-3xl font-bold text-slate-900">
                     {apiKeys?.filter(key => key.is_active).length || 0}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                   <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-600 text-sm font-medium mb-1">Providers</p>
-                  <p className="text-3xl font-bold text-purple-900">
+                  <p className="text-slate-600 text-sm font-medium mb-1">Providers</p>
+                  <p className="text-3xl font-bold text-slate-900">
                     {new Set(apiKeys?.map(key => key.provider)).size || 0}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-purple-200 rounded-xl flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-slate-600" />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Billing & Credits */}
+        <div id="billing" className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 flex items-center space-x-2">
+            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span>Billing & Credits</span>
+          </h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Manage your platform credits, purchase packs, and view recent activity. Powered by Stripe.
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-blue-600 text-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet className="w-5 h-5" />
+                <p className="text-sm font-medium text-white/80">Current balance</p>
+              </div>
+              <p className="text-3xl font-bold">
+                {billingSummary ? billingSummary.wallet.balance_credits.toLocaleString() : '—'} credits
+              </p>
+              <p className="text-sm text-white/80 mt-2">
+                1 credit ≈ {billingSummary ? billingSummary.tokens_per_credit.toLocaleString() : '—'} tokens
+                {billingSummary
+                  ? ` (${creditValueFormatter.format(billingSummary.estimated_token_cost_per_credit)} per credit)`
+                  : ''}
+              </p>
+              <p className="text-xs text-white/70 mt-3">
+                {billingSummary?.has_user_provided_api_key
+                  ? 'Your API key is connected. Credits apply only if you disconnect it.'
+                  : 'Credits are used when you run AI without your own API key.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <a href="#api-keys" className="flex-1 text-center bg-white/90 text-blue-700 font-semibold py-2 rounded-lg hover:bg-white transition text-sm">
+                  Manage API keys
+                </a>
+                <button
+                  type="button"
+                  onClick={refreshBilling}
+                  className="flex-1 flex items-center justify-center gap-2 border border-white/60 text-white font-semibold py-2 rounded-lg hover:bg-white/10 transition text-sm"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh balance
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Prepaid credit packs</h3>
+                {creditPacks && creditPacks.length > 0 ? (
+                  <div className="space-y-2">
+                    {creditPacks.map((pack) => (
+                      <div
+                        key={pack.id}
+                        className="flex items-center justify-between border border-slate-200 rounded-xl px-4 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{pack.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {pack.credits.toLocaleString()} credits · {formatCurrency(pack.price_cents, pack.currency)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => checkoutMutation.mutate(pack.id)}
+                          disabled={checkoutMutation.isPending}
+                          className="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                        >
+                          Buy
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">No credit packs configured. Connect your own API key or check back later.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent billing activity</h3>
+                <ul className="divide-y divide-slate-200 border border-slate-200 rounded-xl overflow-hidden">
+                  {billingTransactions && billingTransactions.length > 0 ? (
+                    billingTransactions.slice(0, 5).map((tx) => (
+                      <li key={tx.id} className="flex items-center justify-between px-4 py-3 bg-white">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{tx.description || tx.transaction_type}</p>
+                          <p className="text-xs text-gray-500">{new Date(tx.created_at).toLocaleString()}</p>
+                        </div>
+                        <span className={`text-sm font-semibold ${tx.credits_delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {tx.credits_delta > 0 ? '+' : ''}{tx.credits_delta} cr
+                        </span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-3 text-sm text-gray-500">No billing activity yet.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quality Profile */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Quality Profile</h2>
+          <p className="text-sm text-gray-600 mb-4">Tune scoring weights for readability, maintainability, security, performance, and testability.</p>
+          <div className="space-y-3">
+            {Object.entries(qualityWeights).map(([key, value]) => (
+              <label key={key} className="block">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="font-medium text-gray-800 capitalize">{key}</span>
+                  <span className="text-gray-600">{Math.round(value * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(value * 100)}
+                  onChange={(e) =>
+                    setQualityWeights((prev) => ({
+                      ...prev,
+                      [key]: Number(e.target.value) / 100,
+                    }))
+                  }
+                  className="w-full"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => saveWeightsMutation.mutate()}
+            className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold"
+          >
+            Save Quality Weights
+          </button>
+        </div>
+
+        {/* Webhooks */}
+        <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">API Webhooks</h2>
+          <p className="text-sm text-gray-600 mb-4">Receive `repository.completed`, `repository.failed`, and `analysis.completed` events.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg"
+              placeholder="https://example.com/webhook"
+            />
+            <input
+              value={webhookSecret}
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg"
+              placeholder="Signing secret"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => createWebhookMutation.mutate()}
+            disabled={!webhookUrl || !webhookSecret || createWebhookMutation.isPending}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+          >
+            Add Webhook
+          </button>
+          <ul className="mt-4 space-y-2">
+            {(webhooks ?? []).map((hook) => (
+              <li key={hook.id} className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{hook.url}</p>
+                  <p className="text-xs text-gray-500">{hook.events.join(', ')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteWebhookMutation.mutate(hook.id)}
+                  className="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <TemplateManager />
+        <AnalyticsPanel />
+      </div>
 
       {/* Add API Key Modal */}
       {showAddModal && (
@@ -477,7 +632,7 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
                   <XCircle className="w-5 h-5" />
-                  <span>Failed to add API key</span>
+                  <span>{getUserFriendlyError(addKeyMutation.error, { operation: 'add API key' })}</span>
                 </div>
               </div>
             )}
@@ -496,9 +651,10 @@ export default function Settings() {
               </div>
               <button
                 onClick={() => setEditingKey(null)}
-                className="text-gray-400 hover:text-gray-600 text-3xl leading-none w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-xl transition duration-200"
+                className="text-gray-400 hover:text-gray-600 w-10 h-10 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-100 rounded-xl transition duration-200"
+                aria-label="Close"
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -552,7 +708,7 @@ export default function Settings() {
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-center justify-center space-x-2 text-red-700 text-sm font-medium">
                   <XCircle className="w-5 h-5" />
-                  <span>Failed to update API key</span>
+                  <span>{getUserFriendlyError(updateKeyMutation.error, { operation: 'update API key' })}</span>
                 </div>
               </div>
             )}

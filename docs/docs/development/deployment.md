@@ -49,7 +49,7 @@ cd codeexplain
 
 # Verify you're in the correct directory
 ls -la
-# Should see: backend/, frontend/, docs/, docker-compose.yml
+# Should see: backend/, frontend/, docs/, compose.yaml
 ```
 
 ### **Step 2: Environment Configuration**
@@ -83,6 +83,15 @@ DEBUG=False
 
 # CORS Configuration
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Billing / Stripe (optional)
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_CHECKOUT_SUCCESS_URL=https://app.yourdomain.com/billing/success
+STRIPE_CHECKOUT_CANCEL_URL=https://app.yourdomain.com/billing/cancel
+BILLING_TOKENS_PER_CREDIT=1000
+BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
 ```
 
 ### **Step 3: Start Database Services**

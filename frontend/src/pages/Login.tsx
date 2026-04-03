@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { getUserFriendlyError, ErrorContexts } from '../utils/errorMessages';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -16,7 +17,10 @@ export default function Login() {
     },
     onSuccess: (data) => {
       loginToStore(data.user, data.access_token);
-      navigate('/dashboard');
+      // Use setTimeout to ensure state update propagates before navigation
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 0);
     },
   });
 
@@ -79,7 +83,7 @@ export default function Login() {
             {loginMutation.isError && (
               <div className="p-4 bg-danger-light border border-danger rounded-lg">
                 <p className="text-danger-dark text-sm font-medium">
-                  {(loginMutation.error as Error)?.message || 'Invalid credentials'}
+                  {getUserFriendlyError(loginMutation.error, ErrorContexts.login)}
                 </p>
               </div>
             )}

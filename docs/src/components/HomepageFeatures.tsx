@@ -4,17 +4,17 @@ import styles from './HomepageFeatures.module.css';
 
 const FeatureList = [
   {
-    title: '🤖 AI-Powered Documentation',
+    title: 'AI-Powered Documentation',
     Svg: require('@site/static/img/ai-documentation.svg').default,
     description: (
       <>
         Automatically generate comprehensive documentation for your code using advanced AI models.
-        Support for 20+ programming languages with intelligent code analysis.
+        Deep support for Python, JavaScript, TypeScript, Go, Rust, Java, and C/C++.
       </>
     ),
   },
   {
-    title: '🔍 Smart Code Review',
+    title: 'Smart Code Review',
     Svg: require('@site/static/img/code-review.svg').default,
     description: (
       <>
@@ -24,42 +24,22 @@ const FeatureList = [
     ),
   },
   {
-    title: '📊 Quality Metrics',
+    title: 'Health Score',
     Svg: require('@site/static/img/quality-metrics.svg').default,
     description: (
       <>
-        Comprehensive 5-dimensional scoring system covering maintainability, testability,
-        readability, performance, and security with actionable improvement suggestions.
+        Single headline score with a detailed breakdown across maintainability, testability,
+        readability, performance, and security.
       </>
     ),
   },
   {
-    title: '🏗️ Architecture Diagrams',
+    title: 'Architecture Diagrams',
     Svg: require('@site/static/img/architecture.svg').default,
     description: (
       <>
         Interactive visualizations of your code structure with relationship mapping,
         multiple layout options, and export capabilities for documentation.
-      </>
-    ),
-  },
-  {
-    title: '🎓 AI Coding Mentor',
-    Svg: require('@site/static/img/mentor.svg').default,
-    description: (
-      <>
-        Personalized skill assessment and learning paths based on your code patterns.
-        Get tailored challenges and track your improvement over time.
-      </>
-    ),
-  },
-  {
-    title: '⚡ Bulk Operations',
-    Svg: require('@site/static/img/bulk-operations.svg').default,
-    description: (
-      <>
-        Process multiple repositories simultaneously with batch analysis capabilities.
-        GitHub integration, custom AI prompts, and API key management included.
       </>
     ),
   },

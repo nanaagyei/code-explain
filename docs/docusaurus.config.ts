@@ -3,12 +3,13 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const siteUrl = process.env.DOCS_SITE_URL ?? 'https://nanaagyei.github.io';
-const baseUrl = process.env.DOCS_BASE_URL ?? '/code-explain/';
+const baseUrl = process.env.DOCS_BASE_URL ?? '/codexplain/';
 
 const config: Config = {
-  title: 'CodeExplain',
+  title: 'CodeXplain',
   tagline: 'AI-Powered Code Documentation & Analysis Platform',
-  favicon: 'img/favicon.ico',
+  favicon: 'favicon.ico',
+  staticDirectories: ['static', 'public'],
 
   // Set the production url of your site here
   // For GitHub Pages: use 'https://nanaagyei.github.io' and baseUrl: '/code-explain/'
@@ -59,13 +60,11 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/android-chrome-512x512.png',
+    image: 'android-chrome-512x512.png',
     navbar: {
-      title: 'CodeXplain',
       logo: {
         alt: 'CodeXplain Logo',
-        src: 'img/android-chrome-192x192.png',
+        src: 'codexplain-logo.png',
       },
       items: [
         {

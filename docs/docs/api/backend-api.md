@@ -132,46 +132,6 @@ Content-Type: application/json
 }
 ```
 
-### AI Mentor
-
-#### Ask AI Mentor
-Get AI-powered code suggestions and explanations.
-
-```http
-POST /mentor/ask
-Content-Type: application/json
-
-{
-  "question": "How can I improve the performance of this React component?",
-  "code_context": "const MyComponent = () => { ... }",
-  "language": "typescript",
-  "context": {
-    "framework": "react",
-    "experience_level": "intermediate"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "answer": "Here are several ways to improve your React component performance...",
-  "suggestions": [
-    {
-      "type": "optimization",
-      "code": "const MyComponent = React.memo(() => { ... })",
-      "explanation": "Using React.memo prevents unnecessary re-renders"
-    }
-  ],
-  "resources": [
-    {
-      "title": "React Performance Optimization",
-      "url": "https://react.dev/learn/render-and-commit"
-    }
-  ]
-}
-```
-
 ### Documentation Generation
 
 #### Generate Documentation
@@ -203,45 +163,74 @@ Content-Type: application/json
 }
 ```
 
-### Bulk Operations
+### Billing
 
-#### Bulk Analysis
-Analyze multiple files or repositories in a single request.
+#### List Credit Packs
+Retrieve the currently available prepaid credit packs.
 
 ```http
-POST /analyze/bulk
+GET /billing/packs
+```
+
+#### Get Wallet Summary
+Returns the wallet balance, tokens-per-credit setting, and whether the user has connected their own OpenAI key.
+
+```http
+GET /billing/wallet
+```
+
+```json
+{
+  "wallet": {
+    "balance_credits": 1200,
+    "lifetime_credits_purchased": 2000,
+    "lifetime_credits_spent": 800,
+    "updated_at": "2025-11-20T15:30:00Z"
+  },
+  "tokens_per_credit": 1000,
+  "estimated_token_cost_per_credit": 1.5,
+  "has_user_provided_api_key": false
+}
+```
+
+#### List Transactions
+Returns the latest ledger entries (deposits, debits, refunds).
+
+```http
+GET /billing/transactions
+```
+
+#### Create Checkout Session
+Starts a Stripe Checkout session for the selected pack. The response contains the hosted Stripe URL; open it in a new tab/window on the frontend.
+
+```http
+POST /billing/checkout
 Content-Type: application/json
 
 {
-  "items": [
-    {
-      "type": "file",
-      "path": "src/utils/helper.ts",
-      "content": "..."
-    },
-    {
-      "type": "repository",
-      "url": "https://github.com/user/repo",
-      "branch": "main"
-    }
-  ],
-  "options": {
-    "parallel": true,
-    "max_concurrent": 5
-  }
+  "credit_pack_id": 1
 }
 ```
 
-**Response:**
 ```json
 {
-  "bulk_analysis_id": "uuid",
-  "status": "processing",
-  "total_items": 2,
-  "completed_items": 0,
-  "results": []
+  "session_id": "cs_test_123",
+  "url": "https://checkout.stripe.com/pay/cs_test_123",
+  "expires_at": "2025-11-20T15:45:00Z",
+  "amount_total": 1400,
+  "currency": "usd",
+  "status": "open"
 }
 ```
+
+#### Stripe Webhook
+Stripe sends `checkout.session.completed` events to this endpoint. The backend validates the signature and credits the wallet. Configure the webhook secret via `STRIPE_WEBHOOK_SECRET`.
+
+```http
+POST /billing/stripe/webhook
+```
+
+> **Note:** Repository uploads now return HTTP `402 Payment Required` when the user has neither a personal OpenAI key nor enough credits to cover usage.
 
 ## Error Handling
 

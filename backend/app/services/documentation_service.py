@@ -10,8 +10,11 @@ Orchestrates the entire process:
 """
 from app.services.code_parser import CodeParser
 from app.services.ai_service import AIDocumentationService
-from typing import Dict, List
+from typing import Dict, List, Optional, Callable, Awaitable, Any
 import asyncio
+
+
+UsageCallback = Callable[[int, Dict[str, Any]], Awaitable[None]]
 
 
 class DocumentationPipeline:
@@ -25,14 +28,16 @@ class DocumentationPipeline:
     - Progress tracking
     """
     
-    def __init__(self):
-        self.ai_service = AIDocumentationService()
+    def __init__(self, usage_callback: Optional[UsageCallback] = None, ai_service: AIDocumentationService | None = None):
+        self.ai_service = ai_service or AIDocumentationService()
+        self.usage_callback = usage_callback
     
     async def process_file(
         self,
         code: str,
         file_path: str,
-        language: str
+        language: str,
+        code_file_id: Optional[int] = None,
     ) -> Dict:
         """
         Process a single code file through the complete pipeline.
@@ -63,12 +68,22 @@ class DocumentationPipeline:
             function_docs = []
             if parsed_code['functions']:
                 print(f"  2️⃣  Generating documentation for {len(parsed_code['functions'])} function(s)...")
-                function_docs = await asyncio.gather(*[
-                    self.ai_service.generate_function_documentation(
-                        func,
-                        self._get_function_context(code, func),
+
+                async def _document_function(func_info: Dict):
+                    result = await self.ai_service.generate_function_documentation(
+                        func_info,
+                        self._get_function_context(code, func_info),
                         language
                     )
+                    await self._record_usage(result.tokens_used, {
+                        "stage": "function",
+                        "code_file_id": code_file_id,
+                        "name": func_info.get('name')
+                    })
+                    return result.content
+
+                function_docs = await asyncio.gather(*[
+                    _document_function(func)
                     for func in parsed_code['functions']
                 ])
             
@@ -76,33 +91,55 @@ class DocumentationPipeline:
             class_docs = []
             if parsed_code['classes']:
                 print(f"  3️⃣  Generating documentation for {len(parsed_code['classes'])} class(es)...")
-                class_docs = await asyncio.gather(*[
-                    self.ai_service.generate_class_documentation(
-                        cls,
-                        self._get_class_context(code, cls),
+
+                async def _document_class(class_info: Dict):
+                    result = await self.ai_service.generate_class_documentation(
+                        class_info,
+                        self._get_class_context(code, class_info),
                         language
                     )
+                    await self._record_usage(result.tokens_used, {
+                        "stage": "class",
+                        "code_file_id": code_file_id,
+                        "name": class_info.get('name')
+                    })
+                    return result.content
+
+                class_docs = await asyncio.gather(*[
+                    _document_class(cls)
                     for cls in parsed_code['classes']
                 ])
             
             # Step 4: Generate file summary
             print("  4️⃣  Generating file summary...")
-            file_summary = await self.ai_service.generate_file_summary(
+            file_summary_result = await self.ai_service.generate_file_summary(
                 parsed_code,
                 code,
                 language,
                 file_path
             )
+            await self._record_usage(file_summary_result.tokens_used, {
+                "stage": "file_summary",
+                "code_file_id": code_file_id,
+                "file_path": file_path
+            })
+            file_summary = file_summary_result.content
             
             # Step 5: Generate inline comments (if code is complex)
             commented_code = code
             if parsed_code['complexity'] > 10:
                 print(f"  5️⃣  Adding inline comments (complexity: {parsed_code['complexity']})...")
-                commented_code = await self.ai_service.generate_inline_comments(
+                inline_result = await self.ai_service.generate_inline_comments(
                     code,
                     language,
                     parsed_code
                 )
+                await self._record_usage(inline_result.tokens_used, {
+                    "stage": "inline_comments",
+                    "code_file_id": code_file_id,
+                    "file_path": file_path
+                })
+                commented_code = inline_result.content
             else:
                 print(f"  5️⃣  Skipping inline comments (complexity: {parsed_code['complexity']} ≤ 10)")
             
@@ -227,3 +264,8 @@ class DocumentationPipeline:
         print(f"{'='*60}\n")
         
         return results
+
+    async def _record_usage(self, tokens_used: int, context: Dict[str, Any]):
+        if not self.usage_callback or tokens_used <= 0:
+            return
+        await self.usage_callback(tokens_used, context)

@@ -1,0 +1,154 @@
+{
+  "name": "codexplain-vscode",
+  "displayName": "CodeXplain",
+  "description": "Understand any codebase in minutes. AI-powered file analysis with health scores and summaries.",
+  "version": "0.1.0",
+  "publisher": "codexplain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codexplain/codexplain-vscode"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "code analysis",
+    "documentation",
+    "ai",
+    "code quality",
+    "health score"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codexplain.analyzeCurrentFile",
+        "title": "CodeXplain: Analyze Current File",
+        "icon": "$(search)"
+      },
+      {
+        "command": "codexplain.explainSelection",
+        "title": "CodeXplain: Explain Selection",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "codexplain.analyzeRepository",
+        "title": "CodeXplain: Analyze Repository",
+        "icon": "$(repo)"
+      },
+      {
+        "command": "codexplain.copyResults",
+        "title": "CodeXplain: Copy Results to Clipboard"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codexplain.analyzeCurrentFile",
+          "group": "codexplain@1",
+          "when": "editorTextFocus && resourceLangId =~ /^(python|javascript|typescript|typescriptreact|javascriptreact|java|c|cpp|go|rust)$/"
+        },
+        {
+          "command": "codexplain.explainSelection",
+          "group": "codexplain@2",
+          "when": "editorTextFocus && editorHasSelection && resourceLangId =~ /^(python|javascript|typescript|typescriptreact|javascriptreact|java|c|cpp|go|rust)$/"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "codexplain.analyzeCurrentFile",
+          "group": "navigation",
+          "when": "resourceLangId =~ /^(python|javascript|typescript|typescriptreact|javascriptreact|java|c|cpp|go|rust)$/"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "codexplain.analyzeCurrentFile",
+          "group": "codexplain@1",
+          "when": "resourceLangId =~ /^(python|javascript|typescript|typescriptreact|javascriptreact|java|c|cpp|go|rust)$/"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codexplain.analyzeRepository",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodeXplain",
+      "properties": {
+        "codexplain.apiBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "Base URL for the CodeXplain backend API.",
+          "order": 1
+        },
+        "codexplain.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "CodeXplain API access token (Bearer token).",
+          "order": 2
+        },
+        "codexplain.showStatusBarItem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show CodeXplain status bar item.",
+          "order": 3
+        },
+        "codexplain.enableHoverHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show quick hints when hovering over functions.",
+          "order": 4
+        },
+        "codexplain.enableCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show complexity indicators above functions and classes.",
+          "order": 5
+        },
+        "codexplain.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show health score issues as VS Code diagnostics (warnings/errors).",
+          "order": 6
+        },
+        "codexplain.diagnosticSeverityThreshold": {
+          "type": "number",
+          "default": 70,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Show diagnostics for metrics scoring below this threshold (0-100).",
+          "order": 7
+        },
+        "codexplain.webAppUrl": {
+          "type": "string",
+          "default": "http://localhost:5173",
+          "description": "CodeXplain web app URL for 'Open in CodeXplain' link. Use your deployed app URL when not local.",
+          "order": 8
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile",
+    "test": "npm run compile && node --test out/tests/*.test.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^2.24.0",
+    "typescript": "^5.4.5"
+  }
+}

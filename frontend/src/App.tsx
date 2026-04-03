@@ -1,17 +1,16 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { apiClient } from './api/client';
 
-// Pages (we'll create these)
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import RepositoryDetail from './pages/RepositoryDetail';
 import FileDocumentation from './pages/FileDocumentation';
 import Settings from './pages/Settings';
-import BatchJobs from './pages/BatchJobs';
-import MentorDashboard from './pages/MentorDashboard';
+import Compare from './pages/Compare';
+import { AppLayout } from './components/AppLayout';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -31,6 +30,7 @@ function DocumentTitleManager() {
     const getPageTitle = (pathname: string) => {
       switch (pathname) {
         case '/':
+        case '/dashboard':
           return 'Dashboard - CodeXplain';
         case '/login':
           return 'Sign In - CodeXplain';
@@ -38,10 +38,8 @@ function DocumentTitleManager() {
           return 'Sign Up - CodeXplain';
         case '/settings':
           return 'Settings - CodeXplain';
-        case '/batch-jobs':
-          return 'Batch Jobs - CodeXplain';
-        case '/mentor':
-          return 'AI Mentor - CodeXplain';
+        case '/compare':
+          return 'Compare Repositories - CodeXplain';
         default:
           if (pathname.startsWith('/repositories/')) {
             if (pathname.includes('/files/')) {
@@ -61,15 +59,15 @@ function DocumentTitleManager() {
     if (metaDescription) {
       const descriptions: Record<string, string> = {
         '/': 'Manage your code repositories and generate AI-powered documentation. Upload files or connect GitHub repositories for automated code analysis.',
+        '/dashboard': 'Manage your code repositories and generate AI-powered documentation. Upload files or connect GitHub repositories for automated code analysis.',
         '/login': 'Sign in to CodeXplain and start generating comprehensive documentation for your code projects.',
         '/register': 'Join CodeXplain to transform your code into comprehensive documentation with AI-powered insights.',
         '/settings': 'Configure your CodeXplain account settings, API keys, and documentation preferences.',
-        '/batch-jobs': 'Monitor and manage your batch documentation jobs. Track progress and view results.',
-        '/mentor': 'Get personalized coding insights and learning recommendations from our AI mentor.',
+        '/compare': 'Compare two repositories and analyze differences, architecture, and complexity.',
       };
       
-      const description = descriptions[location.pathname] || 
-        'Transform your code into comprehensive documentation with AI. Get personalized coding insights, learning paths, and automated documentation.';
+      const description = descriptions[location.pathname] ||
+        'Transform your code into clear, structured documentation with AI-powered insights.';
       
       metaDescription.setAttribute('content', description);
     }
@@ -78,16 +76,16 @@ function DocumentTitleManager() {
   return null;
 }
 
-// Protected Route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+// Protected Route wrapper (layout route: renders Outlet)
+function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuthStore();
   
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="text-center font-body">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-300 border-t-primary-500" />
+          <p className="mt-4 text-slate-600 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -97,25 +95,38 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
   
-  return <>{children}</>;
+  return <Outlet />;
 }
 
 function App() {
-  const { setUser, setLoading } = useAuthStore();
+  const { user, setUser, setLoading } = useAuthStore();
   
-  // Check authentication on mount
+  // Check authentication on mount only (runs once)
   useEffect(() => {
+    const AUTH_CHECK_TIMEOUT_MS = 8000;
+
     const checkAuth = async () => {
       const token = localStorage.getItem('access_token');
-      
+
+      if (user) {
+        setLoading(false);
+        return;
+      }
+
       if (!token) {
         setLoading(false);
         return;
       }
-      
+
       try {
-        const user = await apiClient.getCurrentUser();
-        setUser(user);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Auth check timeout')), AUTH_CHECK_TIMEOUT_MS)
+        );
+        const fetchedUser = await Promise.race([
+          apiClient.getCurrentUser(),
+          timeoutPromise,
+        ]);
+        setUser(fetchedUser);
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('access_token');
@@ -124,70 +135,30 @@ function App() {
         setLoading(false);
       }
     };
-    
+
     checkAuth();
-  }, [setUser, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <DocumentTitleManager />
         <Routes>
-          {/* Public routes */}
           <Route path="/login" element={<Auth />} />
           <Route path="/register" element={<Auth />} />
           
-          {/* Protected routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repositories/:id"
-            element={
-              <ProtectedRoute>
-                <RepositoryDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repositories/:repositoryId/files/:fileId"
-            element={
-              <ProtectedRoute>
-                <FileDocumentation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/batch-jobs"
-            element={
-              <ProtectedRoute>
-                <BatchJobs />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/mentor"
-            element={
-              <ProtectedRoute>
-                <MentorDashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="compare" element={<Compare />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="repositories/:id" element={<RepositoryDetail />} />
+              <Route path="repositories/:repositoryId/files/:fileId" element={<FileDocumentation />} />
+            </Route>
+          </Route>
           
-          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

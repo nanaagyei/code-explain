@@ -1,5 +1,7 @@
 # Rate Limiting
 
+> **Implementation note (2026-03-04):** Production behavior is currently config-driven (single policy set via environment variables such as `RATE_LIMIT_PER_MINUTE`, `AUTH_RATE_LIMIT_PER_MINUTE`, `UPLOAD_RATE_LIMIT_PER_MINUTE`, and `ANALYSIS_RATE_LIMIT_PER_MINUTE`) with standard `429` responses and `X-RateLimit-*` headers. The plan-tier tables below are roadmap guidance and not fully enforced by billing tiers yet.
+
 Code Explain implements comprehensive rate limiting to ensure fair usage and system stability. This document covers rate limiting policies, implementation details, and best practices for handling limits.
 
 ## Overview
@@ -36,7 +38,6 @@ Control resource-intensive operations:
 |----------|------|-----|------------|
 | Documentation Generation | 10/hour | 100/hour | 1,000/hour |
 | Architecture Diagrams | 5/hour | 50/hour | 500/hour |
-| Bulk Operations | 1/hour | 10/hour | 100/hour |
 
 ## Rate Limit Headers
 
@@ -320,8 +321,8 @@ async function testRateLimits() {
 ### Request Optimization
 
 ```javascript
-// Batch multiple operations
-const bulkAnalysis = await codeExplain.analyzeBulk([
+// Group related operations to reduce requests
+const groupedAnalysis = await codeExplain.analyzeGroup([
   { type: 'file', path: 'file1.js' },
   { type: 'file', path: 'file2.js' },
   { type: 'file', path: 'file3.js' }
@@ -408,7 +409,6 @@ const regionalLimits = {
 
 **Slow Performance**
 - Implement request queuing
-- Use bulk operations
 - Enable caching
 
 ### Debug Mode

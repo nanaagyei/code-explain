@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
@@ -12,7 +13,11 @@ function HomepageHeader() {
   return (
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">
-        <h1 className="hero__title">{siteConfig.title}</h1>
+        <img
+          src={useBaseUrl('/codexplain-logo.png')}
+          alt="CodeXplain"
+          className={styles.heroLogo}
+        />
         <p className="hero__subtitle">
           AI-Powered Code Documentation & Analysis Platform
         </p>
@@ -20,7 +25,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/getting-started/introduction">
-            Get Started - 5min ⏱️
+            Get Started - 5min ⏱
           </Link>
         </div>
       </div>
@@ -33,7 +38,7 @@ export default function Home(): JSX.Element {
   return (
     <Layout
       title={`${siteConfig.title} - AI-Powered Code Documentation`}
-      description="Transform your code documentation with AI-powered analysis, interactive diagrams, and intelligent insights. Support for 20+ programming languages.">
+      description="Transform your code documentation with AI-powered analysis, interactive diagrams, and intelligent insights. Deep support for Python, JavaScript, TypeScript, Go, Rust, Java, and C/C++.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

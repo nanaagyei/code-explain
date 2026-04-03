@@ -8,7 +8,7 @@ Configuration is driven via environment variables. Use `env.template` at the rep
 
 - Backend env file: `.env` (based on `env.template`)
 - Frontend env file: `frontend/.env` (based on `frontend/env.example`)
-- Docker overrides: environment entries in `docker-compose.yml`
+- Docker overrides: environment entries in `compose.yaml`
 
 ## Backend Configuration
 
@@ -78,6 +78,22 @@ MAX_FILE_SIZE_MB=10
 ```
 
 - Tune limits by environment and plan tiers
+
+### Billing & Stripe (Optional but recommended)
+
+```bash
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/billing/cancel
+BILLING_TOKENS_PER_CREDIT=1000
+BILLING_ESTIMATED_COST_PER_CREDIT_CENTS=150
+```
+
+- Configure these values to enable prepaid credit packs backed by Stripe Checkout
+- `BILLING_TOKENS_PER_CREDIT` controls how many OpenAI tokens equal one credit
+- Webhook secret is required so deposits happen automatically after checkout completes. For local dev with `stripe listen`, use the CLI-printed secret; for production, use the Dashboard webhook secret.
 
 ## Frontend Configuration
 
@@ -168,7 +184,7 @@ Never commit secrets to git. Rotate periodically.
 
 - Root env template: `env.template`
 - Frontend env template: `frontend/env.example`
-- Compose services: `docker-compose.yml`
+- Compose services: `compose.yaml`
 - Docs app config: `docs/docusaurus.config.ts` (site settings)
 
 
