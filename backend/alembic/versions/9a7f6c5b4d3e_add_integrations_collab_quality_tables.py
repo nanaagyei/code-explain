@@ -138,6 +138,26 @@ def upgrade() -> None:
     )
 
     op.create_table(
+        "saved_explorations",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("share_id", sa.String(length=36), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("repository_id", sa.Integer(), nullable=False),
+        sa.Column("title", sa.String(length=200), nullable=False),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("state", sa.JSON(), nullable=True),
+        sa.Column("is_public", sa.Integer(), nullable=True, server_default="1"),
+        sa.Column("view_count", sa.Integer(), nullable=True, server_default="0"),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(["repository_id"], ["repositories.id"]),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index("ix_saved_explorations_id", "saved_explorations", ["id"], unique=False)
+    op.create_index("ix_saved_explorations_share_id", "saved_explorations", ["share_id"], unique=True)
+
+    op.create_table(
         "collaboration_sessions",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
@@ -187,6 +207,10 @@ def downgrade() -> None:
     op.drop_index("ix_collaboration_sessions_user_id", table_name="collaboration_sessions")
     op.drop_index("ix_collaboration_sessions_id", table_name="collaboration_sessions")
     op.drop_table("collaboration_sessions")
+
+    op.drop_index("ix_saved_explorations_share_id", table_name="saved_explorations")
+    op.drop_index("ix_saved_explorations_id", table_name="saved_explorations")
+    op.drop_table("saved_explorations")
 
     op.drop_index("ix_outbound_webhook_deliveries_event_name", table_name="outbound_webhook_deliveries")
     op.drop_index("ix_outbound_webhook_deliveries_endpoint_id", table_name="outbound_webhook_deliveries")

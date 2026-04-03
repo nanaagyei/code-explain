@@ -8,7 +8,7 @@ Configuration is driven via environment variables. Use `env.template` at the rep
 
 - Backend env file: `.env` (based on `env.template`)
 - Frontend env file: `frontend/.env` (based on `frontend/env.example`)
-- Docker overrides: environment entries in `docker-compose.yml`
+- Docker overrides: environment entries in `compose.yaml`
 
 ## Backend Configuration
 
@@ -184,7 +184,7 @@ Never commit secrets to git. Rotate periodically.
 
 - Root env template: `env.template`
 - Frontend env template: `frontend/env.example`
-- Compose services: `docker-compose.yml`
+- Compose services: `compose.yaml`
 - Docs app config: `docs/docusaurus.config.ts` (site settings)
 
 
