@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_USER: codeexplain
       POSTGRES_PASSWORD: devpassword123
-      POSTGRES_DB: codeexplain_db
+      POSTGRES_DB: codeexplain
     ports:
       - "5433:5432"
     volumes:
@@ -51,7 +51,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://codeexplain:devpassword123@postgres:5432/codeexplain_db
+      DATABASE_URL: postgresql+asyncpg://codeexplain:devpassword123@postgres:5432/codeexplain
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
       DEBUG: "True"

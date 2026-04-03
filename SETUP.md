@@ -40,16 +40,18 @@ Edit `backend/.env` and set:
 **Important:** The project `compose.yaml` uses:
 - PostgreSQL on host port **5433** (mapped from container 5432)
 - Password: **devpassword123**
-- Database: **codeexplain_db**
+- Database: **codeexplain**
 - User: **codeexplain**
 
 Your `DATABASE_URL` should be:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://codeexplain:devpassword123@localhost:5433/codeexplain_db
+DATABASE_URL=postgresql+asyncpg://codeexplain:devpassword123@localhost:5433/codeexplain
 ```
 
 If you use a different Docker setup or port, adjust accordingly.
+
+If you previously used Docker Compose with database name `codeexplain_db`, either run `docker compose down -v` once (destructive: wipes the local Postgres volume) or point `DATABASE_URL` at your existing database until you migrate.
 
 ### 3. Backend Setup
 
